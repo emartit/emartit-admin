@@ -6,155 +6,170 @@
 <title>eMart IT — Admin Panel</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: Arial, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+body { font-family: Arial, sans-serif; background: #1a56a0; color: #1a1a2e; min-height: 100vh; }
 
 /* LOGIN */
 #login-screen {
   display: flex; align-items: center; justify-content: center;
-  min-height: 100vh; background: #0f172a;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1a56a0 0%, #2e75c8 100%);
 }
 .login-box {
-  background: #1e293b; border-radius: 16px; padding: 48px 40px;
-  width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  background: white; border-radius: 16px; padding: 48px 40px;
+  width: 420px; box-shadow: 0 20px 60px rgba(0,0,0,0.25);
   text-align: center;
 }
-.login-box h1 { font-size: 22px; color: #f1f5f9; margin-bottom: 6px; }
-.login-box p { font-size: 13px; color: #94a3b8; margin-bottom: 32px; }
+.login-logo { width: 200px; margin-bottom: 10px; }
+.login-subtitle { font-size: 13px; color: #64748b; margin-bottom: 32px; }
+.login-box label { display: block; text-align: left; font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 6px; }
 .login-box input {
   width: 100%; padding: 13px 16px; border-radius: 8px;
-  border: 1px solid #334155; background: #0f172a; color: #f1f5f9;
-  font-size: 14px; margin-bottom: 14px;
+  border: 1px solid #d1d5db; background: white; color: #1a1a2e;
+  font-size: 14px; margin-bottom: 18px; outline: none;
 }
+.login-box input:focus { border-color: #1a56a0; box-shadow: 0 0 0 3px rgba(26,86,160,0.1); }
 .login-box button {
-  width: 100%; padding: 13px; border-radius: 8px; border: none;
-  background: #3b82f6; color: white; font-size: 15px; font-weight: 700;
+  width: 100%; padding: 14px; border-radius: 8px; border: none;
+  background: #1a56a0; color: white; font-size: 15px; font-weight: 700;
   cursor: pointer; transition: background 0.2s;
 }
-.login-box button:hover { background: #2563eb; }
-.login-error { color: #f87171; font-size: 13px; margin-top: 10px; }
-
-/* MAIN APP */
-#app { display: none; }
-
-.topbar {
-  background: #1e293b; padding: 16px 28px; display: flex;
-  align-items: center; justify-content: space-between;
-  border-bottom: 1px solid #334155;
+.login-box button:hover { background: #154a8a; }
+.login-error { color: #dc2626; font-size: 13px; margin-top: 10px; }
+.admin-label {
+  display: inline-block; background: #fef3c7; color: #92400e;
+  font-size: 11px; font-weight: 700; padding: 4px 12px;
+  border-radius: 20px; margin-bottom: 20px; letter-spacing: 0.5px;
 }
-.topbar-title { font-size: 18px; font-weight: 700; color: #3b82f6; }
-.topbar-right { display: flex; align-items: center; gap: 16px; }
+
+/* TOP BAR */
+#app { display: none; }
+.topbar {
+  background: white; padding: 14px 28px; display: flex;
+  align-items: center; justify-content: space-between;
+  border-bottom: 2px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.topbar-logo { height: 40px; }
+.topbar-right { display: flex; align-items: center; gap: 14px; }
 .admin-badge {
-  background: #1d4ed8; color: white; font-size: 11px;
-  padding: 4px 10px; border-radius: 20px; font-weight: 600;
+  background: #1a56a0; color: white; font-size: 11px;
+  padding: 4px 12px; border-radius: 20px; font-weight: 700; letter-spacing: 0.5px;
 }
 .logout-btn {
-  background: #334155; color: #94a3b8; border: none; padding: 7px 14px;
-  border-radius: 6px; cursor: pointer; font-size: 13px;
+  background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0;
+  padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600;
 }
-.logout-btn:hover { background: #475569; color: white; }
+.logout-btn:hover { background: #e2e8f0; color: #1a1a2e; }
 
+/* NAV */
 .nav-tabs {
-  background: #1e293b; padding: 0 28px;
-  display: flex; gap: 4px; border-bottom: 1px solid #334155;
+  background: white; padding: 0 28px;
+  display: flex; gap: 4px; border-bottom: 2px solid #e5e7eb;
 }
 .nav-tab {
-  padding: 14px 20px; font-size: 13px; font-weight: 600;
-  color: #94a3b8; cursor: pointer; border-bottom: 3px solid transparent;
-  transition: all 0.15s;
+  padding: 14px 22px; font-size: 13px; font-weight: 600;
+  color: #64748b; cursor: pointer; border-bottom: 3px solid transparent;
+  margin-bottom: -2px; transition: all 0.15s;
 }
-.nav-tab:hover { color: #e2e8f0; }
-.nav-tab.active { color: #3b82f6; border-bottom-color: #3b82f6; }
+.nav-tab:hover { color: #1a56a0; }
+.nav-tab.active { color: #1a56a0; border-bottom-color: #1a56a0; }
 
+/* CONTENT */
 .content { padding: 28px; max-width: 1200px; margin: 0 auto; }
 
-/* STATS ROW */
 .stats-row {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr));
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr));
   gap: 16px; margin-bottom: 28px;
 }
 .stat-card {
-  background: #1e293b; border-radius: 12px; padding: 20px 24px;
-  border: 1px solid #334155;
+  background: white; border-radius: 12px; padding: 22px 24px;
+  border: 1px solid #e5e7eb; box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
-.stat-num { font-size: 28px; font-weight: 700; color: #3b82f6; }
-.stat-lbl { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+.stat-num { font-size: 30px; font-weight: 700; color: #1a56a0; }
+.stat-lbl { font-size: 12px; color: #64748b; margin-top: 4px; font-weight: 600; }
 
-/* TABLE */
 .table-card {
-  background: #1e293b; border-radius: 12px; overflow: hidden;
-  border: 1px solid #334155; margin-bottom: 24px;
+  background: white; border-radius: 12px; overflow: hidden;
+  border: 1px solid #e5e7eb; box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  margin-bottom: 24px;
 }
 .table-header {
-  padding: 16px 20px; display: flex; justify-content: space-between;
-  align-items: center; border-bottom: 1px solid #334155;
+  padding: 18px 22px; display: flex; justify-content: space-between;
+  align-items: center; border-bottom: 1px solid #e5e7eb;
+  background: #f8fafc;
 }
-.table-header h3 { font-size: 15px; font-weight: 700; color: #f1f5f9; }
+.table-header h3 { font-size: 15px; font-weight: 700; color: #1a1a2e; }
+
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
-th { background: #0f172a; color: #94a3b8; padding: 11px 16px; text-align: left; font-weight: 600; }
-td { padding: 12px 16px; border-bottom: 1px solid #1e3a5f22; color: #e2e8f0; }
+th { background: #f1f5f9; color: #64748b; padding: 11px 16px; text-align: left; font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+td { padding: 13px 16px; border-bottom: 1px solid #f1f5f9; color: #1a1a2e; }
 tr:last-child td { border-bottom: none; }
-tr:hover td { background: #ffffff08; }
+tr:hover td { background: #f8fafc; }
 
 .status-badge {
-  display: inline-block; padding: 3px 10px; border-radius: 20px;
+  display: inline-block; padding: 4px 10px; border-radius: 20px;
   font-size: 11px; font-weight: 700;
 }
-.status-active { background: #14532d; color: #4ade80; }
-.status-inactive { background: #450a0a; color: #f87171; }
+.status-active { background: #dcfce7; color: #166534; }
+.status-inactive { background: #fee2e2; color: #991b1b; }
 
 .toggle-btn {
-  padding: 5px 12px; border-radius: 6px; border: none;
+  padding: 6px 14px; border-radius: 6px; border: none;
   font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s;
 }
-.toggle-active { background: #450a0a; color: #f87171; }
-.toggle-active:hover { background: #7f1d1d; }
-.toggle-inactive { background: #14532d; color: #4ade80; }
-.toggle-inactive:hover { background: #166534; }
+.toggle-active { background: #fee2e2; color: #991b1b; }
+.toggle-active:hover { background: #fecaca; }
+.toggle-inactive { background: #dcfce7; color: #166534; }
+.toggle-inactive:hover { background: #bbf7d0; }
 
 .view-btn {
-  padding: 5px 12px; border-radius: 6px; border: 1px solid #334155;
-  background: transparent; color: #94a3b8; font-size: 12px; cursor: pointer;
+  padding: 6px 14px; border-radius: 6px; border: 1px solid #e2e8f0;
+  background: white; color: #64748b; font-size: 12px; cursor: pointer; font-weight: 600;
 }
-.view-btn:hover { background: #334155; color: white; }
+.view-btn:hover { background: #f1f5f9; color: #1a56a0; border-color: #1a56a0; }
 
 .export-btn {
-  background: #059669; color: white; border: none; padding: 9px 18px;
+  background: #1a56a0; color: white; border: none; padding: 9px 18px;
   border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
 }
-.export-btn:hover { background: #047857; }
+.export-btn:hover { background: #154a8a; }
 
-/* CONVERSATIONS MODAL */
+/* MODAL */
 .modal-overlay {
   display: none; position: fixed; inset: 0;
-  background: rgba(0,0,0,0.7); z-index: 100;
+  background: rgba(0,0,0,0.5); z-index: 100;
   align-items: center; justify-content: center;
 }
 .modal-overlay.open { display: flex; }
 .modal {
-  background: #1e293b; border-radius: 14px; padding: 28px;
+  background: white; border-radius: 14px; padding: 28px;
   width: 700px; max-height: 80vh; overflow-y: auto;
-  border: 1px solid #334155;
+  border: 1px solid #e5e7eb; box-shadow: 0 20px 60px rgba(0,0,0,0.2);
 }
 .modal-header {
   display: flex; justify-content: space-between; align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid #e5e7eb;
 }
-.modal-header h3 { font-size: 16px; font-weight: 700; color: #f1f5f9; }
+.modal-header h3 { font-size: 16px; font-weight: 700; color: #1a1a2e; }
 .modal-close {
-  background: #334155; border: none; color: #94a3b8; width: 30px; height: 30px;
-  border-radius: 6px; cursor: pointer; font-size: 16px;
+  background: #f1f5f9; border: none; color: #64748b; width: 32px; height: 32px;
+  border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 700;
 }
+.modal-close:hover { background: #e2e8f0; }
+
 .convo-bubble {
-  margin-bottom: 12px; padding: 10px 14px; border-radius: 10px; font-size: 13px;
+  margin-bottom: 12px; padding: 12px 16px; border-radius: 10px; font-size: 13px; line-height: 1.5;
 }
-.convo-user { background: #1d4ed8; color: white; margin-left: 40px; }
-.convo-bot { background: #334155; color: #e2e8f0; margin-right: 40px; }
-.convo-role { font-size: 10px; opacity: 0.7; margin-bottom: 4px; font-weight: 700; }
+.convo-user { background: #1a56a0; color: white; margin-left: 60px; border-radius: 10px 10px 2px 10px; }
+.convo-bot { background: #f1f5f9; color: #1a1a2e; margin-right: 60px; border-radius: 10px 10px 10px 2px; }
+.convo-role { font-size: 10px; opacity: 0.7; margin-bottom: 4px; font-weight: 700; text-transform: uppercase; }
 .convo-empty { color: #94a3b8; text-align: center; padding: 40px; font-size: 14px; }
 
 .loading { color: #94a3b8; text-align: center; padding: 40px; font-size: 14px; }
 .page { display: none; }
 .page.active { display: block; }
+
+.profit-green { color: #166534; font-weight: 700; }
 </style>
 </head>
 <body>
@@ -162,10 +177,12 @@ tr:hover td { background: #ffffff08; }
 <!-- LOGIN -->
 <div id="login-screen">
   <div class="login-box">
-    <h1>eMart IT Admin</h1>
-    <p>Restricted access — authorized personnel only</p>
+    <img src="https://assets.cdn.filesafe.space/gc3cLEwwg5coVvb6yiOD/media/6a0d91c507a34aa07f7ae15e.png" class="login-logo" alt="eMart IT">
+    <div class="admin-label">ADMIN ACCESS ONLY</div>
+    <p class="login-subtitle">Admin Panel — Restricted to authorized personnel</p>
+    <label>Admin Password</label>
     <input type="password" id="admin-password" placeholder="Enter admin password" onkeydown="if(event.key==='Enter')doLogin()">
-    <button onclick="doLogin()">Sign In</button>
+    <button onclick="doLogin()">Sign In to Admin Panel</button>
     <div class="login-error" id="login-error"></div>
   </div>
 </div>
@@ -173,44 +190,36 @@ tr:hover td { background: #ffffff08; }
 <!-- MAIN APP -->
 <div id="app">
   <div class="topbar">
-    <div class="topbar-title">eMart IT — Admin Panel</div>
+    <img src="https://assets.cdn.filesafe.space/gc3cLEwwg5coVvb6yiOD/media/6a0d91c507a34aa07f7ae15e.png" class="topbar-logo" alt="eMart IT">
     <div class="topbar-right">
-      <span class="admin-badge">ADMIN</span>
+      <span class="admin-badge">ADMIN PANEL</span>
       <button class="logout-btn" onclick="doLogout()">Sign Out</button>
     </div>
   </div>
 
   <div class="nav-tabs">
-    <div class="nav-tab active" onclick="showPage('clients')">All Clients</div>
-    <div class="nav-tab" onclick="showPage('billing')">Billing Summary</div>
+    <div class="nav-tab active" onclick="showPage('clients', this)">All Clients</div>
+    <div class="nav-tab" onclick="showPage('billing', this)">Billing Summary</div>
   </div>
 
   <div class="content">
 
     <!-- CLIENTS PAGE -->
     <div class="page active" id="page-clients">
-      <div class="stats-row" id="stats-row">
+      <div class="stats-row">
         <div class="stat-card"><div class="stat-num" id="stat-total">—</div><div class="stat-lbl">Total Clients</div></div>
         <div class="stat-card"><div class="stat-num" id="stat-active">—</div><div class="stat-lbl">Active Clients</div></div>
         <div class="stat-card"><div class="stat-num" id="stat-convos">—</div><div class="stat-lbl">Conversations This Month</div></div>
         <div class="stat-card"><div class="stat-num" id="stat-revenue">—</div><div class="stat-lbl">Revenue This Month</div></div>
       </div>
-
       <div class="table-card">
-        <div class="table-header">
-          <h3>All Clients</h3>
-        </div>
+        <div class="table-header"><h3>All Clients</h3></div>
         <table>
           <thead>
             <tr>
-              <th>Business</th>
-              <th>Email</th>
-              <th>Status</th>
-              <th>Convos</th>
-              <th>API Cost</th>
-              <th>Charge</th>
-              <th>Profit</th>
-              <th>Actions</th>
+              <th>Business</th><th>Email</th><th>Status</th>
+              <th>Convos</th><th>API Cost</th><th>Charge</th>
+              <th>Profit</th><th>Actions</th>
             </tr>
           </thead>
           <tbody id="clients-table-body">
@@ -230,11 +239,8 @@ tr:hover td { background: #ffffff08; }
         <table>
           <thead>
             <tr>
-              <th>Business</th>
-              <th>Conversations</th>
-              <th>API Cost</th>
-              <th>Charged to Client</th>
-              <th>Your Profit</th>
+              <th>Business</th><th>Conversations</th><th>API Cost</th>
+              <th>Charged to Client</th><th>Your Profit</th>
             </tr>
           </thead>
           <tbody id="billing-table-body">
@@ -242,8 +248,7 @@ tr:hover td { background: #ffffff08; }
           </tbody>
         </table>
       </div>
-
-      <div class="stats-row" id="billing-totals" style="margin-top:0"></div>
+      <div class="stats-row" id="billing-totals"></div>
     </div>
 
   </div>
@@ -267,6 +272,7 @@ let adminToken = "";
 async function doLogin() {
   const pw = document.getElementById("admin-password").value;
   document.getElementById("login-error").textContent = "";
+  if (!pw) { document.getElementById("login-error").textContent = "Please enter your password."; return; }
   try {
     const res = await fetch(API + "/admin/login", {
       method: "POST",
@@ -291,23 +297,19 @@ function doLogout() {
   document.getElementById("admin-password").value = "";
 }
 
-function showPage(name) {
+function showPage(name, tab) {
   document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
   document.querySelectorAll(".nav-tab").forEach(t => t.classList.remove("active"));
   document.getElementById("page-" + name).classList.add("active");
-  event.target.classList.add("active");
+  tab.classList.add("active");
   if (name === "billing") loadBilling();
 }
 
 async function loadClients() {
   try {
-    const res = await fetch(API + "/admin/clients", {
-      headers: {"x-admin-token": adminToken}
-    });
+    const res = await fetch(API + "/admin/clients?x_admin_token=" + adminToken);
     const data = await res.json();
     const clients = data.clients || [];
-
-    // Stats
     const active = clients.filter(c => c.status === "active").length;
     const totalConvos = clients.reduce((s,c) => s + c.conversations_this_month, 0);
     const totalRev = clients.reduce((s,c) => s + c.charge_to_client, 0);
@@ -315,8 +317,6 @@ async function loadClients() {
     document.getElementById("stat-active").textContent = active;
     document.getElementById("stat-convos").textContent = totalConvos;
     document.getElementById("stat-revenue").textContent = "$" + totalRev.toFixed(2);
-
-    // Table
     const tbody = document.getElementById("clients-table-body");
     if (clients.length === 0) {
       tbody.innerHTML = '<tr><td colspan="8" class="loading">No clients found</td></tr>';
@@ -330,30 +330,27 @@ async function loadClients() {
         <td>${c.conversations_this_month}</td>
         <td>$${c.api_cost.toFixed(2)}</td>
         <td>$${c.charge_to_client.toFixed(2)}</td>
-        <td style="color:#4ade80">$${c.your_profit.toFixed(2)}</td>
-        <td style="display:flex;gap:6px">
+        <td class="profit-green">$${c.your_profit.toFixed(2)}</td>
+        <td style="display:flex;gap:6px;flex-wrap:wrap">
           <button class="toggle-btn toggle-${c.status}" onclick="toggleClient('${c.id}')">
             ${c.status === "active" ? "Pause" : "Activate"}
           </button>
-          <button class="view-btn" onclick="viewConvos('${c.id}','${c.business_name}')">Chats</button>
+          <button class="view-btn" onclick="viewConvos('${c.id}','${c.business_name}')">View Chats</button>
         </td>
       </tr>
     `).join("");
   } catch(e) {
-    document.getElementById("clients-table-body").innerHTML = 
-      '<tr><td colspan="8" class="loading">Error loading clients</td></tr>';
+    document.getElementById("clients-table-body").innerHTML =
+      '<tr><td colspan="8" class="loading">Error loading clients. Check Railway is running.</td></tr>';
   }
 }
 
 async function toggleClient(clientId) {
   try {
-    const res = await fetch(API + "/admin/clients/" + clientId + "/toggle", {
-      method: "POST",
-      headers: {"x-admin-token": adminToken}
-    });
+    const res = await fetch(API + "/admin/clients/" + clientId + "/toggle?x_admin_token=" + adminToken, {method:"POST"});
     const data = await res.json();
     if (data.success) loadClients();
-  } catch(e) { alert("Error toggling client"); }
+  } catch(e) { alert("Error toggling client status"); }
 }
 
 async function viewConvos(clientId, businessName) {
@@ -361,26 +358,24 @@ async function viewConvos(clientId, businessName) {
   document.getElementById("modal-body").innerHTML = '<div class="convo-empty">Loading...</div>';
   document.getElementById("convo-modal").classList.add("open");
   try {
-    const res = await fetch(API + "/admin/clients/" + clientId + "/conversations", {
-      headers: {"x-admin-token": adminToken}
-    });
+    const res = await fetch(API + "/admin/clients/" + clientId + "/conversations?x_admin_token=" + adminToken);
     const data = await res.json();
     const convos = data.conversations || [];
     if (convos.length === 0) {
-      document.getElementById("modal-body").innerHTML = '<div class="convo-empty">No conversations yet</div>';
+      document.getElementById("modal-body").innerHTML = '<div class="convo-empty">No conversations yet for this client.</div>';
       return;
     }
     document.getElementById("modal-body").innerHTML = convos.map(c => {
       const msgs = typeof c.messages === "string" ? JSON.parse(c.messages) : (c.messages || []);
       return msgs.map(m => `
         <div class="convo-bubble convo-${m.role === "user" ? "user" : "bot"}">
-          <div class="convo-role">${m.role === "user" ? "VISITOR" : "BOT"}</div>
+          <div class="convo-role">${m.role === "user" ? "Visitor" : "Bot"}</div>
           ${m.content}
         </div>
       `).join("");
-    }).join('<hr style="border-color:#334155;margin:16px 0">');
+    }).join('<hr style="border-color:#e5e7eb;margin:16px 0">');
   } catch(e) {
-    document.getElementById("modal-body").innerHTML = '<div class="convo-empty">Error loading conversations</div>';
+    document.getElementById("modal-body").innerHTML = '<div class="convo-empty">Error loading conversations.</div>';
   }
 }
 
@@ -390,9 +385,7 @@ function closeModal() {
 
 async function loadBilling() {
   try {
-    const res = await fetch(API + "/admin/billing", {
-      headers: {"x-admin-token": adminToken}
-    });
+    const res = await fetch(API + "/admin/billing?x_admin_token=" + adminToken);
     const data = await res.json();
     document.getElementById("billing-month-title").textContent = "Billing Summary — " + data.month;
     const tbody = document.getElementById("billing-table-body");
@@ -402,19 +395,18 @@ async function loadBilling() {
         <td>${r.conversations}</td>
         <td>$${r.api_cost.toFixed(2)}</td>
         <td>$${r.charge.toFixed(2)}</td>
-        <td style="color:#4ade80">$${r.profit.toFixed(2)}</td>
+        <td class="profit-green">$${r.profit.toFixed(2)}</td>
       </tr>
-    `).join("") || '<tr><td colspan="5" class="loading">No data</td></tr>';
-
+    `).join("") || '<tr><td colspan="5" class="loading">No billing data yet</td></tr>';
     const t = data.totals || {};
     document.getElementById("billing-totals").innerHTML = `
       <div class="stat-card"><div class="stat-num">${t.conversations||0}</div><div class="stat-lbl">Total Conversations</div></div>
       <div class="stat-card"><div class="stat-num">$${(t.api_cost||0).toFixed(2)}</div><div class="stat-lbl">Total API Cost</div></div>
       <div class="stat-card"><div class="stat-num">$${(t.revenue||0).toFixed(2)}</div><div class="stat-lbl">Total Revenue</div></div>
-      <div class="stat-card"><div class="stat-num" style="color:#4ade80">$${(t.profit||0).toFixed(2)}</div><div class="stat-lbl">Total Profit</div></div>
+      <div class="stat-card"><div class="stat-num profit-green">$${(t.profit||0).toFixed(2)}</div><div class="stat-lbl">Total Profit</div></div>
     `;
   } catch(e) {
-    document.getElementById("billing-table-body").innerHTML = '<tr><td colspan="5" class="loading">Error loading billing</td></tr>';
+    document.getElementById("billing-table-body").innerHTML = '<tr><td colspan="5" class="loading">Error loading billing data.</td></tr>';
   }
 }
 
