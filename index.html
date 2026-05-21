@@ -213,7 +213,10 @@ tr:hover td { background: #f8fafc; }
         <div class="stat-card"><div class="stat-num" id="stat-revenue">—</div><div class="stat-lbl">Revenue This Month</div></div>
       </div>
       <div class="table-card">
-        <div class="table-header"><h3>All Clients</h3></div>
+       <div class="table-header">
+  <h3>All Clients</h3>
+  <button class="export-btn" onclick="openAddClient()">+ Add New Client</button>
+</div>
         <table>
           <thead>
             <tr>
@@ -254,6 +257,92 @@ tr:hover td { background: #f8fafc; }
   </div>
 </div>
 
+<!-- ADD CLIENT MODAL -->
+<div class="modal-overlay" id="add-client-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Add New Client</h3>
+      <button class="modal-close" onclick="closeAddClient()">✕</button>
+    </div>
+    <div id="add-client-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:6px">Owner Name</label>
+          <input type="text" id="nc-name" placeholder="e.g. John Smith"
+            style="width:100%;padding:10px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none">
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:6px">Business Name</label>
+          <input type="text" id="nc-business" placeholder="e.g. Glamour Hair Salon"
+            style="width:100%;padding:10px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none">
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:6px">Business Type</label>
+          <select id="nc-type" style="width:100%;padding:10px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none">
+            <option value="Hair Salon">Hair Salon</option>
+            <option value="Doctor / Clinic">Doctor / Clinic</option>
+            <option value="Restaurant">Restaurant</option>
+            <option value="Carpenter">Carpenter</option>
+            <option value="Retail Shop">Retail Shop</option>
+            <option value="Real Estate">Real Estate</option>
+            <option value="Lawyer">Lawyer</option>
+            <option value="Gym / Fitness">Gym / Fitness</option>
+            <option value="Dental Clinic">Dental Clinic</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:6px">Phone Number</label>
+          <input type="text" id="nc-phone" placeholder="e.g. +880 1234 567890"
+            style="width:100%;padding:10px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none">
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:6px">Email Address</label>
+          <input type="email" id="nc-email" placeholder="client@email.com"
+            style="width:100%;padding:10px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none">
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:6px">Password</label>
+          <input type="text" id="nc-password" placeholder="Set their login password"
+            style="width:100%;padding:10px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none">
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:6px">Location</label>
+          <input type="text" id="nc-location" placeholder="e.g. Dhaka, Bangladesh"
+            style="width:100%;padding:10px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none">
+        </div>
+        <div>
+          <label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:6px">Working Hours</label>
+          <input type="text" id="nc-hours" placeholder="e.g. Mon-Sat 9am-6pm"
+            style="width:100%;padding:10px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none">
+        </div>
+      </div>
+      <div style="margin-top:14px">
+        <label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:6px">Services Offered</label>
+        <textarea id="nc-services" rows="2" placeholder="e.g. Haircut, Coloring, Hair Spa, Beard Trim"
+          style="width:100%;padding:10px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;resize:vertical"></textarea>
+      </div>
+      <div style="margin-top:14px">
+        <label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:6px">Business Description</label>
+        <textarea id="nc-desc" rows="2" placeholder="e.g. A premium hair salon serving Dhaka since 2015"
+          style="width:100%;padding:10px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;resize:vertical"></textarea>
+      </div>
+      <div style="margin-top:20px;display:flex;gap:10px;justify-content:flex-end">
+        <button onclick="closeAddClient()"
+          style="padding:10px 20px;border:1px solid #d1d5db;border-radius:8px;background:white;color:#64748b;font-size:13px;font-weight:600;cursor:pointer">
+          Cancel
+        </button>
+        <button onclick="createNewClient()"
+          style="padding:10px 24px;border:none;border-radius:8px;background:#1a56a0;color:white;font-size:13px;font-weight:700;cursor:pointer">
+          Create Client
+        </button>
+      </div>
+      <div id="nc-error" style="color:#dc2626;font-size:13px;margin-top:10px;display:none"></div>
+      <div id="nc-success" style="color:#166534;font-size:13px;margin-top:10px;display:none"></div>
+    </div>
+  </div>
+</div>
+  
 <!-- CONVERSATIONS MODAL -->
 <div class="modal-overlay" id="convo-modal">
   <div class="modal">
@@ -418,6 +507,105 @@ async function exportCSV() {
 document.getElementById("convo-modal").addEventListener("click", function(e) {
   if (e.target === this) closeModal();
 });
+
+
+  function openAddClient() {
+  document.getElementById("add-client-modal").classList.add("open");
+  document.getElementById("nc-error").style.display = "none";
+  document.getElementById("nc-success").style.display = "none";
+}
+
+function closeAddClient() {
+  document.getElementById("add-client-modal").classList.remove("open");
+  // Clear all fields
+  ["nc-name","nc-business","nc-phone","nc-email","nc-password","nc-location","nc-hours","nc-services","nc-desc"].forEach(id => {
+    document.getElementById(id).value = "";
+  });
+}
+
+async function createNewClient() {
+  const name = document.getElementById("nc-name").value.trim();
+  const business = document.getElementById("nc-business").value.trim();
+  const type = document.getElementById("nc-type").value;
+  const phone = document.getElementById("nc-phone").value.trim();
+  const email = document.getElementById("nc-email").value.trim();
+  const password = document.getElementById("nc-password").value.trim();
+  const location = document.getElementById("nc-location").value.trim();
+  const hours = document.getElementById("nc-hours").value.trim();
+  const services = document.getElementById("nc-services").value.trim();
+  const desc = document.getElementById("nc-desc").value.trim();
+
+  const errEl = document.getElementById("nc-error");
+  const sucEl = document.getElementById("nc-success");
+  errEl.style.display = "none";
+  sucEl.style.display = "none";
+
+  if (!name || !business || !email || !password) {
+    errEl.textContent = "Please fill in Name, Business Name, Email and Password at minimum.";
+    errEl.style.display = "block";
+    return;
+  }
+
+  try {
+    // Step 1 — Create client account
+    const clientRes = await fetch(API + "/clients", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        name: name,
+        email: email,
+        business_name: business,
+        business_type: type
+      })
+    });
+    const clientData = await clientRes.json();
+    if (!clientRes.ok) throw new Error(clientData.detail || "Failed to create client");
+
+    const clientId = clientData.client.id;
+
+    // Step 2 — Create login credentials
+    const authRes = await fetch(API + "/auth/register", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        client_id: clientId,
+        email: email,
+        password: password
+      })
+    });
+    if (!authRes.ok) throw new Error("Failed to create login");
+
+    // Step 3 — Save bot settings
+    await fetch(API + "/clients/settings", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        client_id: clientId,
+        business_description: desc || business + " - " + type,
+        services: services || "Please contact us for our services",
+        working_hours: hours || "Please contact us for our hours",
+        location: location || "",
+        phone: phone || "",
+        website: "",
+        bot_name: "Assistant",
+        bot_color: "#1a569a",
+        custom_prompt: ""
+      })
+    });
+
+    // Success!
+    sucEl.textContent = "✅ Client created successfully! ID: " + clientId + " | Login: " + email + " / " + password;
+    sucEl.style.display = "block";
+    setTimeout(() => {
+      closeAddClient();
+      loadClients();
+    }, 4000);
+
+  } catch(e) {
+    errEl.textContent = "Error: " + e.message;
+    errEl.style.display = "block";
+  }
+}
 </script>
 </body>
 </html>
