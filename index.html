@@ -595,7 +595,7 @@ async function createNewClient() {
 
 // Step 4 — Send to GoHighLevel
     try {
-      await fetch("https://services.leadconnectorhq.com/hooks/gc3cLEwwg5coVvb6yiOD/webhook-trigger/b204372c-081f-4341-b1a8-710c6320375b", {
+      await fetch(API + "/admin/notify-ghl", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({
@@ -617,7 +617,6 @@ async function createNewClient() {
     } catch(e) {
       console.log("GHL webhook error:", e);
     }
-
     // Success!
     sucEl.textContent = "✅ Client created! Login: " + email + " / " + password + " — GHL contact created!";
     sucEl.style.display = "block";
@@ -625,7 +624,6 @@ async function createNewClient() {
       closeAddClient();
       loadClients();
     }, 4000);
-
   } catch(e) {
     errEl.textContent = "Error: " + e.message;
     errEl.style.display = "block";
