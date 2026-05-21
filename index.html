@@ -365,15 +365,16 @@ async function viewConvos(clientId, businessName) {
       document.getElementById("modal-body").innerHTML = '<div class="convo-empty">No conversations yet for this client.</div>';
       return;
     }
-    document.getElementById("modal-body").innerHTML = convos.map(c => {
-      const msgs = typeof c.messages === "string" ? JSON.parse(c.messages) : (c.messages || []);
-      return msgs.map(m => `
-        <div class="convo-bubble convo-${m.role === "user" ? "user" : "bot"}">
-          <div class="convo-role">${m.role === "user" ? "Visitor" : "Bot"}</div>
-          ${m.content}
+document.getElementById("modal-body").innerHTML = convos.map(c => {
+      const isBot = c.message && (c.message.startsWith("Hi there") || c.message.startsWith("Hello") || c.message.startsWith("Thank you") || c.message.startsWith("Welcome"));
+      const role = isBot ? "bot" : "user";
+      return `
+        <div class="convo-bubble convo-${role}">
+          <div class="convo-role">${role === "user" ? "Visitor" : "Bot"}</div>
+          ${c.message || ""}
         </div>
-      `).join("");
-    }).join('<hr style="border-color:#e5e7eb;margin:16px 0">');
+      `;
+    }).join("");
   } catch(e) {
     document.getElementById("modal-body").innerHTML = '<div class="convo-empty">Error loading conversations.</div>';
   }
