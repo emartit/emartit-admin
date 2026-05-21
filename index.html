@@ -593,8 +593,33 @@ async function createNewClient() {
       })
     });
 
+// Step 4 — Send to GoHighLevel
+    try {
+      await fetch("https://services.leadconnectorhq.com/hooks/gc3cLEwwg5coVvb6yiOD/webhook-trigger/b204372c-081f-4341-b1a8-710c6320375b", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+          contact_name: name,
+          business_name: business,
+          business_type: type,
+          email: email,
+          phone: phone,
+          location: location,
+          working_hours: hours,
+          services: services,
+          client_id: clientId,
+          dashboard_url: "https://emartit.github.io/emartit-dashboard",
+          login_email: email,
+          login_password: password,
+          created_at: new Date().toISOString()
+        })
+      });
+    } catch(e) {
+      console.log("GHL webhook error:", e);
+    }
+
     // Success!
-    sucEl.textContent = "✅ Client created successfully! ID: " + clientId + " | Login: " + email + " / " + password;
+    sucEl.textContent = "✅ Client created! Login: " + email + " / " + password + " — GHL contact created!";
     sucEl.style.display = "block";
     setTimeout(() => {
       closeAddClient();
