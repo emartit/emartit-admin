@@ -1,4 +1,4 @@
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -117,8 +117,6 @@ tr:hover td { background: #f8fafc; }
 .btn-view:hover { background: #bae6fd; }
 .btn-edit { background: #fef9c3; color: #854d0e; border: none; }
 .btn-edit:hover { background: #fef08a; }
-.btn-delete { background: #fee2e2; color: #991b1b; border: none; }
-.btn-delete:hover { background: #fecaca; }
 
 .export-btn {
   background: #1a56a0; color: white; border: none; padding: 9px 18px;
@@ -144,7 +142,6 @@ tr:hover td { background: #f8fafc; }
 .page { display: none; }
 .page.active { display: block; }
 
-/* MODALS */
 .modal-overlay {
   display: none; position: fixed; inset: 0;
   background: rgba(0,0,0,0.5); z-index: 100;
@@ -170,10 +167,7 @@ tr:hover td { background: #f8fafc; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .form-group { margin-bottom: 0; }
 .form-group.full { grid-column: 1 / -1; }
-.form-group label {
-  font-size: 12px; font-weight: 700; color: #374151;
-  display: block; margin-bottom: 6px;
-}
+.form-group label { font-size: 12px; font-weight: 700; color: #374151; display: block; margin-bottom: 6px; }
 .form-group input, .form-group textarea, .form-group select {
   width: 100%; padding: 10px 14px; border: 1.5px solid #d1d5db;
   border-radius: 8px; font-size: 13px; outline: none; resize: vertical;
@@ -221,6 +215,23 @@ tr:hover td { background: #f8fafc; }
 .msg-success { color: #166534; font-size: 13px; margin-top: 10px; }
 
 input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
+
+.filter-bar {
+  padding: 14px 20px; border-bottom: 1px solid #e5e7eb;
+  display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+  background: #fafafa;
+}
+.filter-bar input, .filter-bar select {
+  padding: 8px 14px; border: 1.5px solid #d1d5db; border-radius: 8px;
+  font-size: 13px; outline: none;
+}
+.filter-bar input { width: 260px; }
+.filter-bar input:focus, .filter-bar select:focus { border-color: #1a56a0; }
+.clear-btn {
+  padding: 8px 14px; border: 1px solid #d1d5db; border-radius: 8px;
+  font-size: 12px; background: white; cursor: pointer; color: #64748b;
+}
+.clear-btn:hover { background: #f1f5f9; }
 </style>
 </head>
 <body>
@@ -293,64 +304,59 @@ input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
       </div>
     </div>
 
-<!-- BILLING PAGE -->
-<div class="page" id="page-billing">
-  <div class="table-card">
-    <div class="table-header">
-      <h3 id="billing-month-title">Monthly Billing Summary</h3>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <button class="export-btn" id="export-selected-btn" onclick="exportSelectedCSV()" style="display:none;background:#059669">
-          ⬇ Export Selected
-        </button>
-        <button class="export-btn" onclick="exportCSV()">⬇ Export All CSV</button>
+    <!-- BILLING PAGE -->
+    <div class="page" id="page-billing">
+      <div class="table-card">
+        <div class="table-header">
+          <h3 id="billing-month-title">Monthly Billing Summary</h3>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button class="export-btn" id="export-selected-btn" onclick="exportSelectedCSV()"
+              style="display:none;background:#059669">⬇ Export Selected</button>
+            <button class="export-btn" onclick="exportCSV()">⬇ Export All CSV</button>
+          </div>
+        </div>
+
+        <div class="filter-bar">
+          <input type="text" id="billing-search" placeholder="🔍 Search by business or email..." oninput="filterBillingTable()">
+          <select id="billing-sort" onchange="filterBillingTable()">
+            <option value="name">Sort by Name</option>
+            <option value="convos">Sort by Conversations</option>
+            <option value="profit">Sort by Profit</option>
+            <option value="charge">Sort by Charge</option>
+          </select>
+          <select id="billing-filter-status" onchange="filterBillingTable()">
+            <option value="all">All Clients</option>
+            <option value="active">Active Only</option>
+            <option value="inactive">Inactive Only</option>
+          </select>
+          <button class="clear-btn" onclick="clearBillingFilters()">✕ Clear</button>
+          <span id="billing-count" style="font-size:12px;color:#64748b"></span>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th><input type="checkbox" id="billing-select-all" onchange="toggleBillingSelectAll(this)"></th>
+              <th>Business</th>
+              <th>Email</th>
+              <th>Status</th>
+              <th>Conversations</th>
+              <th>API Cost</th>
+              <th>Charged to Client</th>
+              <th>Your Profit</th>
+            </tr>
+          </thead>
+          <tbody id="billing-table-body">
+            <tr><td colspan="8" class="loading">Loading billing data...</td></tr>
+          </tbody>
+        </table>
       </div>
+      <div class="stats-row" id="billing-totals"></div>
     </div>
 
-    <!-- SEARCH & FILTER BAR -->
-    <div style="padding:14px 20px;border-bottom:1px solid #e5e7eb;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-      <input type="text" id="billing-search" placeholder="🔍 Search by business or email..."
-        oninput="filterBillingTable()"
-        style="padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;width:260px">
-      <select id="billing-sort" onchange="filterBillingTable()"
-        style="padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none">
-        <option value="name">Sort by Name</option>
-        <option value="convos">Sort by Conversations</option>
-        <option value="profit">Sort by Profit</option>
-        <option value="charge">Sort by Charge</option>
-      </select>
-      <select id="billing-filter-status" onchange="filterBillingTable()"
-        style="padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none">
-        <option value="all">All Clients</option>
-        <option value="active">Active Only</option>
-        <option value="inactive">Inactive Only</option>
-      </select>
-      <button onclick="clearBillingFilters()"
-        style="padding:8px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:12px;background:white;cursor:pointer;color:#64748b">
-        ✕ Clear
-      </button>
-      <span id="billing-count" style="font-size:12px;color:#64748b;margin-left:4px"></span>
-    </div>
-
-    <table>
-      <thead>
-        <tr>
-          <th><input type="checkbox" id="billing-select-all" onchange="toggleBillingSelectAll(this)"></th>
-          <th>Business</th>
-          <th>Email</th>
-          <th>Status</th>
-          <th>Conversations</th>
-          <th>API Cost</th>
-          <th>Charged to Client</th>
-          <th>Your Profit</th>
-        </tr>
-      </thead>
-      <tbody id="billing-table-body">
-        <tr><td colspan="8" class="loading">Loading billing data...</td></tr>
-      </tbody>
-    </table>
   </div>
-  <div class="stats-row" id="billing-totals"></div>
 </div>
+
 <!-- ADD CLIENT MODAL -->
 <div class="modal-overlay" id="add-client-modal">
   <div class="modal">
@@ -501,6 +507,7 @@ input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
 const API = "https://web-production-1c820.up.railway.app";
 let adminToken = "";
 let allClients = [];
+let billingData = [];
 
 async function doLogin() {
   const pw = document.getElementById("admin-password").value;
@@ -599,7 +606,7 @@ function updateDeleteBtn() {
   const checked = document.querySelectorAll(".client-checkbox:checked").length;
   document.getElementById("delete-selected-btn").style.display = checked > 0 ? "block" : "none";
   document.getElementById("select-all").checked =
-    checked === document.querySelectorAll(".client-checkbox").length;
+    checked === document.querySelectorAll(".client-checkbox").length && checked > 0;
 }
 
 async function deleteSelected() {
@@ -645,7 +652,7 @@ async function viewProfile(clientId) {
           <div class="profile-item"><label>Location</label><p>${s.location || "—"}</p></div>
           <div class="profile-item"><label>Working Hours</label><p>${s.working_hours || "—"}</p></div>
           <div class="profile-item" style="grid-column:1/-1"><label>Services</label><p>${s.services || "—"}</p></div>
-          <div class="profile-item" style="grid-column:1/-1"><label>Business Description</label><p>${s.business_description || "—"}</p></div>
+          <div class="profile-item" style="grid-column:1/-1"><label>Description</label><p>${s.business_description || "—"}</p></div>
           <div class="profile-item" style="grid-column:1/-1"><label>Custom Instructions</label><p>${s.custom_prompt || "—"}</p></div>
         </div>
       </div>
@@ -743,7 +750,8 @@ async function viewConvos(clientId, businessName) {
       return;
     }
     document.getElementById("modal-body").innerHTML = convos.map(c => {
-      const isBot = c.message && (c.message.startsWith("Hi there") || c.message.startsWith("Hello") || c.message.startsWith("Thank you") || c.message.startsWith("Welcome"));
+      const isBot = c.message && (c.message.startsWith("Hi there") || c.message.startsWith("Hello") ||
+        c.message.startsWith("Thank you") || c.message.startsWith("Welcome"));
       const role = isBot ? "bot" : "user";
       return `<div class="convo-bubble convo-${role}">
         <div class="convo-role">${role === "user" ? "Visitor" : "Bot"}</div>
@@ -756,27 +764,16 @@ async function viewConvos(clientId, businessName) {
 }
 
 // ============ BILLING ============
-let billingData = [];
-
 async function loadBilling() {
   try {
     const res = await fetch(API + "/admin/billing?x_admin_token=" + adminToken);
     const data = await res.json();
     document.getElementById("billing-month-title").textContent = "Billing Summary — " + data.month;
-
-    // Merge billing rows with client status
     billingData = (data.rows || []).map(r => {
       const client = allClients.find(c => c.business_name === r.business_name) || {};
-      return {
-        ...r,
-        email: client.email || "—",
-        status: client.status || "active",
-        id: client.id || ""
-      };
+      return { ...r, email: client.email || "—", status: client.status || "active", id: client.id || "" };
     });
-
     filterBillingTable();
-
     const t = data.totals || {};
     document.getElementById("billing-totals").innerHTML = `
       <div class="stat-card"><div class="stat-num">${t.conversations||0}</div><div class="stat-lbl">Total Conversations</div></div>
@@ -793,15 +790,11 @@ function filterBillingTable() {
   const search = document.getElementById("billing-search").value.toLowerCase();
   const sort = document.getElementById("billing-sort").value;
   const statusFilter = document.getElementById("billing-filter-status").value;
-
   let filtered = billingData.filter(r => {
-    const matchSearch = r.business_name.toLowerCase().includes(search) ||
-                        r.email.toLowerCase().includes(search);
+    const matchSearch = r.business_name.toLowerCase().includes(search) || r.email.toLowerCase().includes(search);
     const matchStatus = statusFilter === "all" || r.status === statusFilter;
     return matchSearch && matchStatus;
   });
-
-  // Sort
   filtered.sort((a, b) => {
     if (sort === "name") return a.business_name.localeCompare(b.business_name);
     if (sort === "convos") return b.conversations - a.conversations;
@@ -809,15 +802,12 @@ function filterBillingTable() {
     if (sort === "charge") return b.charge - a.charge;
     return 0;
   });
-
   document.getElementById("billing-count").textContent = filtered.length + " client(s) shown";
-
   const tbody = document.getElementById("billing-table-body");
   if (filtered.length === 0) {
     tbody.innerHTML = '<tr><td colspan="8" class="loading">No results found</td></tr>';
     return;
   }
-
   tbody.innerHTML = filtered.map(r => `
     <tr>
       <td><input type="checkbox" class="billing-checkbox" value="${r.id}" data-name="${r.business_name}" onchange="updateBillingExportBtn()"></td>
@@ -869,6 +859,10 @@ function exportSelectedCSV() {
   a.download = "billing_selected.csv";
   a.click();
   URL.revokeObjectURL(url);
+}
+
+async function exportCSV() {
+  window.open(API + "/admin/billing/export?x_admin_token=" + adminToken);
 }
 
 // ============ ADD NEW CLIENT ============
