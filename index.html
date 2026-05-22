@@ -293,31 +293,64 @@ input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
       </div>
     </div>
 
-    <!-- BILLING PAGE -->
-    <div class="page" id="page-billing">
-      <div class="table-card">
-        <div class="table-header">
-          <h3 id="billing-month-title">Monthly Billing Summary</h3>
-          <button class="export-btn" onclick="exportCSV()">⬇ Export CSV</button>
-        </div>
-        <table>
-          <thead>
-            <tr>
-              <th>Business</th><th>Conversations</th><th>API Cost</th>
-              <th>Charged to Client</th><th>Your Profit</th>
-            </tr>
-          </thead>
-          <tbody id="billing-table-body">
-            <tr><td colspan="5" class="loading">Loading billing data...</td></tr>
-          </tbody>
-        </table>
+<!-- BILLING PAGE -->
+<div class="page" id="page-billing">
+  <div class="table-card">
+    <div class="table-header">
+      <h3 id="billing-month-title">Monthly Billing Summary</h3>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button class="export-btn" id="export-selected-btn" onclick="exportSelectedCSV()" style="display:none;background:#059669">
+          ⬇ Export Selected
+        </button>
+        <button class="export-btn" onclick="exportCSV()">⬇ Export All CSV</button>
       </div>
-      <div class="stats-row" id="billing-totals"></div>
     </div>
 
-  </div>
-</div>
+    <!-- SEARCH & FILTER BAR -->
+    <div style="padding:14px 20px;border-bottom:1px solid #e5e7eb;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <input type="text" id="billing-search" placeholder="🔍 Search by business or email..."
+        oninput="filterBillingTable()"
+        style="padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;width:260px">
+      <select id="billing-sort" onchange="filterBillingTable()"
+        style="padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none">
+        <option value="name">Sort by Name</option>
+        <option value="convos">Sort by Conversations</option>
+        <option value="profit">Sort by Profit</option>
+        <option value="charge">Sort by Charge</option>
+      </select>
+      <select id="billing-filter-status" onchange="filterBillingTable()"
+        style="padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none">
+        <option value="all">All Clients</option>
+        <option value="active">Active Only</option>
+        <option value="inactive">Inactive Only</option>
+      </select>
+      <button onclick="clearBillingFilters()"
+        style="padding:8px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:12px;background:white;cursor:pointer;color:#64748b">
+        ✕ Clear
+      </button>
+      <span id="billing-count" style="font-size:12px;color:#64748b;margin-left:4px"></span>
+    </div>
 
+    <table>
+      <thead>
+        <tr>
+          <th><input type="checkbox" id="billing-select-all" onchange="toggleBillingSelectAll(this)"></th>
+          <th>Business</th>
+          <th>Email</th>
+          <th>Status</th>
+          <th>Conversations</th>
+          <th>API Cost</th>
+          <th>Charged to Client</th>
+          <th>Your Profit</th>
+        </tr>
+      </thead>
+      <tbody id="billing-table-body">
+        <tr><td colspan="8" class="loading">Loading billing data...</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="stats-row" id="billing-totals"></div>
+</div>
 <!-- ADD CLIENT MODAL -->
 <div class="modal-overlay" id="add-client-modal">
   <div class="modal">
@@ -723,21 +756,27 @@ async function viewConvos(clientId, businessName) {
 }
 
 // ============ BILLING ============
+let billingData = [];
+
 async function loadBilling() {
   try {
     const res = await fetch(API + "/admin/billing?x_admin_token=" + adminToken);
     const data = await res.json();
     document.getElementById("billing-month-title").textContent = "Billing Summary — " + data.month;
-    const tbody = document.getElementById("billing-table-body");
-    tbody.innerHTML = (data.rows || []).map(r => `
-      <tr>
-        <td><strong>${r.business_name}</strong></td>
-        <td>${r.conversations}</td>
-        <td>$${r.api_cost.toFixed(2)}</td>
-        <td>$${r.charge.toFixed(2)}</td>
-        <td class="profit-green">$${r.profit.toFixed(2)}</td>
-      </tr>
-    `).join("") || '<tr><td colspan="5" class="loading">No billing data yet</td></tr>';
+
+    // Merge billing rows with client status
+    billingData = (data.rows || []).map(r => {
+      const client = allClients.find(c => c.business_name === r.business_name) || {};
+      return {
+        ...r,
+        email: client.email || "—",
+        status: client.status || "active",
+        id: client.id || ""
+      };
+    });
+
+    filterBillingTable();
+
     const t = data.totals || {};
     document.getElementById("billing-totals").innerHTML = `
       <div class="stat-card"><div class="stat-num">${t.conversations||0}</div><div class="stat-lbl">Total Conversations</div></div>
@@ -746,12 +785,90 @@ async function loadBilling() {
       <div class="stat-card"><div class="stat-num profit-green">$${(t.profit||0).toFixed(2)}</div><div class="stat-lbl">Total Profit</div></div>
     `;
   } catch(e) {
-    document.getElementById("billing-table-body").innerHTML = '<tr><td colspan="5" class="loading">Error loading billing.</td></tr>';
+    document.getElementById("billing-table-body").innerHTML = '<tr><td colspan="8" class="loading">Error loading billing.</td></tr>';
   }
 }
 
-async function exportCSV() {
-  window.open(API + "/admin/billing/export?x_admin_token=" + adminToken);
+function filterBillingTable() {
+  const search = document.getElementById("billing-search").value.toLowerCase();
+  const sort = document.getElementById("billing-sort").value;
+  const statusFilter = document.getElementById("billing-filter-status").value;
+
+  let filtered = billingData.filter(r => {
+    const matchSearch = r.business_name.toLowerCase().includes(search) ||
+                        r.email.toLowerCase().includes(search);
+    const matchStatus = statusFilter === "all" || r.status === statusFilter;
+    return matchSearch && matchStatus;
+  });
+
+  // Sort
+  filtered.sort((a, b) => {
+    if (sort === "name") return a.business_name.localeCompare(b.business_name);
+    if (sort === "convos") return b.conversations - a.conversations;
+    if (sort === "profit") return b.profit - a.profit;
+    if (sort === "charge") return b.charge - a.charge;
+    return 0;
+  });
+
+  document.getElementById("billing-count").textContent = filtered.length + " client(s) shown";
+
+  const tbody = document.getElementById("billing-table-body");
+  if (filtered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" class="loading">No results found</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(r => `
+    <tr>
+      <td><input type="checkbox" class="billing-checkbox" value="${r.id}" data-name="${r.business_name}" onchange="updateBillingExportBtn()"></td>
+      <td><strong>${r.business_name}</strong></td>
+      <td>${r.email}</td>
+      <td><span class="status-badge status-${r.status}">${r.status.toUpperCase()}</span></td>
+      <td>${r.conversations}</td>
+      <td>$${r.api_cost.toFixed(2)}</td>
+      <td>$${r.charge.toFixed(2)}</td>
+      <td class="profit-green">$${r.profit.toFixed(2)}</td>
+    </tr>
+  `).join("");
+}
+
+function clearBillingFilters() {
+  document.getElementById("billing-search").value = "";
+  document.getElementById("billing-sort").value = "name";
+  document.getElementById("billing-filter-status").value = "all";
+  filterBillingTable();
+}
+
+function toggleBillingSelectAll(checkbox) {
+  document.querySelectorAll(".billing-checkbox").forEach(cb => cb.checked = checkbox.checked);
+  updateBillingExportBtn();
+}
+
+function updateBillingExportBtn() {
+  const checked = document.querySelectorAll(".billing-checkbox:checked").length;
+  const btn = document.getElementById("export-selected-btn");
+  btn.style.display = checked > 0 ? "block" : "none";
+  btn.textContent = `⬇ Export Selected (${checked})`;
+  document.getElementById("billing-select-all").checked =
+    checked === document.querySelectorAll(".billing-checkbox").length && checked > 0;
+}
+
+function exportSelectedCSV() {
+  const checked = Array.from(document.querySelectorAll(".billing-checkbox:checked"));
+  if (checked.length === 0) return;
+  const selectedNames = checked.map(cb => cb.dataset.name);
+  const selected = billingData.filter(r => selectedNames.includes(r.business_name));
+  let csv = "Business Name,Email,Conversations,API Cost ($),Charge to Client ($),Your Profit ($)\n";
+  selected.forEach(r => {
+    csv += `"${r.business_name}","${r.email}",${r.conversations},${r.api_cost.toFixed(2)},${r.charge.toFixed(2)},${r.profit.toFixed(2)}\n`;
+  });
+  const blob = new Blob([csv], {type: "text/csv"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "billing_selected.csv";
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 // ============ ADD NEW CLIENT ============
