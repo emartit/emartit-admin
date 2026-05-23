@@ -1047,12 +1047,14 @@ async function createNewClient() {
 
     // Update account type and trial dates if trial
 
-    const currentType = document.getElementById("btn-trial").classList.contains("selected-trial") ? "trial" : "paid";
-    if (currentType === "trial") {
-      await fetch(API + "/admin/set-trial/" + clientId + "?x_admin_token=" + adminToken, {
+console.log("Selected type:", selectedAccountType, "Button class:", document.getElementById("btn-trial").className);
+    if (selectedAccountType === "trial") {
+      const trialRes = await fetch(API + "/admin/set-trial/" + clientId + "?x_admin_token=" + adminToken, {
         method: "POST", headers: {"Content-Type": "application/json"},
         body: JSON.stringify({trial_end: trialEnd})
       });
+      const trialResData = await trialRes.json();
+      console.log("Set trial response:", trialResData);
     }
 
     // Create login
