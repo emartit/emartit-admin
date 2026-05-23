@@ -578,10 +578,19 @@ function closeModal(id) {
 }
 
 // ============ ACCOUNT TYPE TOGGLE ============
-function setAccountType(type) {
+
+  function setAccountType(type) {
   selectedAccountType = type;
-  document.getElementById("btn-trial").className = type === "trial" ? "selected-trial" : "";
-  document.getElementById("btn-paid").className = type === "paid" ? "selected-paid" : "";
+  console.log("Account type set to:", type);
+  const trialBtn = document.getElementById("btn-trial");
+  const paidBtn = document.getElementById("btn-paid");
+  trialBtn.className = "";
+  paidBtn.className = "";
+  if (type === "trial") {
+    trialBtn.className = "selected-trial";
+  } else {
+    paidBtn.className = "selected-paid";
+  }
 }
 
 // ============ DUPLICATE CHECK ============
