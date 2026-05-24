@@ -749,7 +749,8 @@ async function loadAnalytics() {
     // Stats
     const total = daily.reduce((s,d) => s + d.conversations, 0);
     const today = daily[daily.length-1]?.conversations || 0;
-    const best = Math.max(...daily.map(d => d.conversations));
+    const bestVal = Math.max(...daily.map(d => d.conversations));
+    const best = bestVal > 0 ? bestVal : 0;
     document.getElementById("an-total-convos").textContent = total;
     document.getElementById("an-today").textContent = today;
     document.getElementById("an-best-day").textContent = best;
