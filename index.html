@@ -249,6 +249,8 @@ input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
 .account-type-toggle button.selected-trial { background: #f59e0b; color: white; }
 .account-type-toggle button.selected-paid { background: #1a56a0; color: white; }
 .account-type-toggle button:not(.selected-trial):not(.selected-paid) { background: white; color: #64748b; }
+
+.faq-row input:focus { border-color: #1a56a0; }
 </style>
 </head>
 <body>
@@ -279,6 +281,7 @@ input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
   <div class="nav-tabs">
     <div class="nav-tab active" onclick="showPage('clients', this)">All Clients</div>
     <div class="nav-tab" onclick="showPage('billing', this)">Billing Summary</div>
+    <div class="nav-tab" onclick="showPage('ai-training', this)">🧠 AI Training</div>
   </div>
 
   <div class="content">
@@ -315,6 +318,29 @@ input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
           </thead>
           <tbody id="clients-table-body">
             <tr><td colspan="8" class="loading">Loading clients...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- AI TRAINING PAGE -->
+    <div class="page" id="page-ai-training">
+      <div class="table-card">
+        <div class="table-header">
+          <h3>🧠 AI Training & Knowledge Base</h3>
+          <div style="font-size:13px;color:#64748b">Admin only — clients cannot see this section</div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Business</th>
+              <th>Knowledge Base</th>
+              <th>FAQ Items</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="ai-training-table-body">
+            <tr><td colspan="4" class="loading">Loading...</td></tr>
           </tbody>
         </table>
       </div>
@@ -373,8 +399,6 @@ input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
       <h3>Add New Client</h3>
       <button class="modal-close" onclick="closeAddClient()">✕</button>
     </div>
-
-    <!-- Account Type Toggle -->
     <div style="margin-bottom:20px">
       <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:8px">Account Type</div>
       <div class="account-type-toggle">
@@ -383,7 +407,6 @@ input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
       </div>
       <div id="duplicate-warning" class="msg-warning" style="display:none"></div>
     </div>
-
     <div class="form-grid">
       <div class="form-group">
         <label>Owner Name</label>
@@ -520,6 +543,37 @@ input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
   </div>
 </div>
 
+<!-- AI TRAINING MODAL -->
+<div class="modal-overlay" id="ai-modal">
+  <div class="modal" style="width:800px;max-width:95vw">
+    <div class="modal-header">
+      <h3 id="ai-modal-title">🧠 AI Training</h3>
+      <button class="modal-close" onclick="closeModal('ai-modal')">✕</button>
+    </div>
+    <input type="hidden" id="ai-client-id">
+
+    <div class="profile-section">
+      <h4>📚 Knowledge Base</h4>
+      <p style="font-size:12px;color:#64748b;margin-bottom:10px">Paste anything here — website content, services, pricing, policies. The AI will use this to answer visitor questions accurately.</p>
+      <textarea id="ai-knowledge-base" rows="8" style="width:100%;padding:12px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;resize:vertical;font-family:Arial,sans-serif" placeholder="Paste business info, services, pricing, FAQs, policies, product details here..."></textarea>
+    </div>
+
+    <div class="profile-section" style="margin-top:20px">
+      <h4>❓ FAQ Builder</h4>
+      <p style="font-size:12px;color:#64748b;margin-bottom:10px">Add specific Q&A pairs. The AI will answer these questions exactly as written.</p>
+      <div id="faq-list"></div>
+      <button onclick="addFaqRow()" style="margin-top:10px;padding:8px 16px;background:#e0f2fe;color:#0369a1;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">+ Add FAQ Item</button>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal('ai-modal')">Cancel</button>
+      <button class="btn-save" onclick="saveAiTraining()">💾 Save AI Training</button>
+    </div>
+    <div class="msg-error" id="ai-error" style="display:none"></div>
+    <div class="msg-success" id="ai-success" style="display:none"></div>
+  </div>
+</div>
+
 <!-- CONVERSATIONS MODAL -->
 <div class="modal-overlay" id="convo-modal">
   <div class="modal">
@@ -571,6 +625,7 @@ function showPage(name, tab) {
   document.getElementById("page-" + name).classList.add("active");
   tab.classList.add("active");
   if (name === "billing") loadBilling();
+  if (name === "ai-training") loadAiTrainingTable();
 }
 
 function closeModal(id) {
@@ -578,10 +633,8 @@ function closeModal(id) {
 }
 
 // ============ ACCOUNT TYPE TOGGLE ============
-
-  function setAccountType(type) {
+function setAccountType(type) {
   selectedAccountType = type;
-  console.log("Account type set to:", type);
   const trialBtn = document.getElementById("btn-trial");
   const paidBtn = document.getElementById("btn-paid");
   trialBtn.className = "";
@@ -687,6 +740,7 @@ function renderClientsTable() {
             ${c.status === "active" ? "⏸" : "▶"}
           </button>
           <button class="btn-sm btn-view" onclick="viewConvos('${c.id}','${c.business_name}')">💬</button>
+          <button class="btn-sm" style="background:#e9d5ff;color:#6b21a8" onclick="openAiTraining('${c.id}','${c.business_name}')">🧠</button>
           ${convertBtn}
         </td>
       </tr>
@@ -805,6 +859,7 @@ async function viewProfile(clientId) {
         ${(trialData.account_type === "trial" || trialData.account_type === "expired") ?
           `<button class="btn-paid btn-save" onclick="closeModal('profile-modal');convertToPaid('${clientId}')">💳 Convert to Paid</button>` : ""}
         <button class="btn-save" onclick="closeModal('profile-modal');openEdit('${clientId}')">✏️ Edit</button>
+        <button class="btn-save" style="background:#6b21a8" onclick="closeModal('profile-modal');openAiTraining('${clientId}','${client.business_name}')">🧠 AI Training</button>
       </div>
     `;
   } catch(e) {
@@ -901,6 +956,141 @@ async function viewConvos(clientId, businessName) {
     }).join("");
   } catch(e) {
     document.getElementById("modal-body").innerHTML = '<div class="convo-empty">Error loading.</div>';
+  }
+}
+
+// ============ AI TRAINING ============
+async function loadAiTrainingTable() {
+  const tbody = document.getElementById("ai-training-table-body");
+  if (!allClients.length) {
+    tbody.innerHTML = '<tr><td colspan="4" class="loading">No clients found. Go to All Clients tab first.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = '<tr><td colspan="4" class="loading">Loading AI training data...</td></tr>';
+  try {
+    const rows = await Promise.all(allClients.map(async c => {
+      try {
+        const res = await fetch(API + "/clients/" + c.id + "/settings");
+        const data = await res.json();
+        const s = data.settings || {};
+        const kbLen = s.knowledge_base ? s.knowledge_base.length : 0;
+        const faqCount = s.faq_items ? s.faq_items.length : 0;
+        return { c, kbLen, faqCount };
+      } catch(e) { return { c, kbLen: 0, faqCount: 0 }; }
+    }));
+    tbody.innerHTML = rows.map(({ c, kbLen, faqCount }) => `
+      <tr>
+        <td>
+          <strong>${c.business_name}</strong><br>
+          <span style="font-size:11px;color:#64748b">${c.email}</span>
+        </td>
+        <td>${kbLen > 0
+          ? '<span style="color:#166534;font-weight:600">✅ ' + kbLen + ' characters</span>'
+          : '<span style="color:#94a3b8">Not set</span>'}</td>
+        <td>${faqCount > 0
+          ? '<span style="color:#166534;font-weight:600">✅ ' + faqCount + ' items</span>'
+          : '<span style="color:#94a3b8">None</span>'}</td>
+        <td>
+          <button class="btn-sm" style="background:#e9d5ff;color:#6b21a8" onclick="openAiTraining('${c.id}','${c.business_name}')">🧠 Train AI</button>
+        </td>
+      </tr>
+    `).join("");
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="4" class="loading">Error loading.</td></tr>';
+  }
+}
+
+async function openAiTraining(clientId, businessName) {
+  document.getElementById("ai-modal-title").textContent = "🧠 AI Training — " + businessName;
+  document.getElementById("ai-client-id").value = clientId;
+  document.getElementById("ai-error").style.display = "none";
+  document.getElementById("ai-success").style.display = "none";
+  document.getElementById("ai-knowledge-base").value = "";
+  document.getElementById("faq-list").innerHTML = "";
+  document.getElementById("ai-modal").classList.add("open");
+  try {
+    const res = await fetch(API + "/clients/" + clientId + "/settings");
+    const data = await res.json();
+    const s = data.settings || {};
+    document.getElementById("ai-knowledge-base").value = s.knowledge_base || "";
+    const faqs = s.faq_items || [];
+    if (faqs.length > 0) {
+      faqs.forEach(faq => addFaqRow(faq.question || "", faq.answer || ""));
+    } else {
+      addFaqRow();
+    }
+  } catch(e) { addFaqRow(); }
+}
+
+function addFaqRow(question = "", answer = "") {
+  const div = document.createElement("div");
+  div.className = "faq-row";
+  div.style.cssText = "display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-bottom:8px;align-items:start";
+  div.innerHTML = `
+    <input type="text" placeholder="Q: What are your opening hours?" value="${question.replace(/"/g, '&quot;')}"
+      style="padding:9px 12px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;width:100%">
+    <input type="text" placeholder="A: We are open Monday to Friday 9am-6pm" value="${answer.replace(/"/g, '&quot;')}"
+      style="padding:9px 12px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;width:100%">
+    <button onclick="this.parentElement.remove()"
+      style="padding:9px 12px;background:#fee2e2;color:#991b1b;border:none;border-radius:8px;cursor:pointer;font-weight:700">✕</button>
+  `;
+  document.getElementById("faq-list").appendChild(div);
+}
+
+async function saveAiTraining() {
+  const clientId = document.getElementById("ai-client-id").value;
+  const knowledgeBase = document.getElementById("ai-knowledge-base").value;
+  const errEl = document.getElementById("ai-error");
+  const sucEl = document.getElementById("ai-success");
+  errEl.style.display = "none";
+  sucEl.style.display = "none";
+
+  const faqRows = document.querySelectorAll(".faq-row");
+  const faqItems = [];
+  faqRows.forEach(row => {
+    const inputs = row.querySelectorAll("input");
+    const q = inputs[0].value.trim();
+    const a = inputs[1].value.trim();
+    if (q && a) faqItems.push({ question: q, answer: a });
+  });
+
+  try {
+    const settingsRes = await fetch(API + "/clients/" + clientId + "/settings");
+    const settingsData = await settingsRes.json();
+    const s = settingsData.settings || {};
+
+    const res = await fetch(API + "/clients/settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        client_id: clientId,
+        business_description: s.business_description || "",
+        services: s.services || "",
+        working_hours: s.working_hours || "",
+        location: s.location || "",
+        phone: s.phone || "",
+        website: s.website || "",
+        bot_name: s.bot_name || "Assistant",
+        bot_color: s.bot_color || "#1a569a",
+        bubble_color: s.bubble_color || "#1a569a",
+        header_color: s.header_color || "#1a569a",
+        chat_position: s.chat_position || "right",
+        bot_avatar: s.bot_avatar || "robot",
+        welcome_message: s.welcome_message || "Hi! How can I help you today? 😊",
+        custom_prompt: s.custom_prompt || "",
+        bot_avatar_url: s.bot_avatar_url || "",
+        knowledge_base: knowledgeBase,
+        faq_items: faqItems
+      })
+    });
+
+    if (!res.ok) throw new Error("Failed to save");
+    sucEl.textContent = "✅ AI Training saved! The chatbot will now use this knowledge immediately.";
+    sucEl.style.display = "block";
+    setTimeout(() => { closeModal("ai-modal"); loadAiTrainingTable(); }, 2500);
+  } catch(e) {
+    errEl.textContent = "Error saving: " + e.message;
+    errEl.style.display = "block";
   }
 }
 
@@ -1042,7 +1232,6 @@ async function createNewClient() {
   }
 
   try {
-    // Create client with account type
     const now = new Date();
     const trialEnd = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString();
 
@@ -1054,25 +1243,18 @@ async function createNewClient() {
     if (!clientRes.ok) throw new Error(clientData.detail || "Failed to create client");
     const clientId = clientData.client.id;
 
-    // Update account type and trial dates if trial
-
-console.log("Selected type:", selectedAccountType, "Button class:", document.getElementById("btn-trial").className);
     if (selectedAccountType === "trial") {
-      const trialRes = await fetch(API + "/admin/set-trial/" + clientId + "?x_admin_token=" + adminToken, {
+      await fetch(API + "/admin/set-trial/" + clientId + "?x_admin_token=" + adminToken, {
         method: "POST", headers: {"Content-Type": "application/json"},
         body: JSON.stringify({trial_end: trialEnd})
       });
-      const trialResData = await trialRes.json();
-      console.log("Set trial response:", trialResData);
     }
 
-    // Create login
     await fetch(API + "/auth/register", {
       method: "POST", headers: {"Content-Type": "application/json"},
       body: JSON.stringify({client_id: clientId, email, password})
     });
 
-    // Save settings
     await fetch(API + "/clients/settings", {
       method: "POST", headers: {"Content-Type": "application/json"},
       body: JSON.stringify({
@@ -1086,7 +1268,6 @@ console.log("Selected type:", selectedAccountType, "Button class:", document.get
       })
     });
 
-    // Notify GHL
     try {
       await fetch(API + "/admin/notify-ghl", {
         method: "POST", headers: {"Content-Type": "application/json"},
