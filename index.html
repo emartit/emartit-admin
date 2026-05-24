@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>eMart IT — Admin Panel v2</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: Arial, sans-serif; background: #1a56a0; color: #1a1a2e; min-height: 100vh; }
@@ -250,7 +251,33 @@ input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
 .account-type-toggle button.selected-paid { background: #1a56a0; color: white; }
 .account-type-toggle button:not(.selected-trial):not(.selected-paid) { background: white; color: #64748b; }
 
-.faq-row input:focus { border-color: #1a56a0; }
+.chart-card {
+  background: white; border-radius: 12px; padding: 24px;
+  border: 1px solid #e5e7eb; box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  margin-bottom: 24px;
+}
+.chart-title {
+  font-size: 15px; font-weight: 700; color: #1a1a2e;
+  margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid #e5e7eb;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.chart-subtitle { font-size: 12px; color: #64748b; font-weight: 400; }
+.charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+@media (max-width: 768px) { .charts-grid { grid-template-columns: 1fr; } }
+
+.analytics-stat {
+  background: white; border-radius: 12px; padding: 20px 24px;
+  border: 1px solid #e5e7eb; text-align: center;
+}
+.analytics-stat .num { font-size: 36px; font-weight: 700; color: #1a56a0; }
+.analytics-stat .lbl { font-size: 12px; color: #64748b; margin-top: 4px; font-weight: 600; }
+
+.client-analytics-btn {
+  padding: 6px 12px; border-radius: 6px; border: none;
+  font-size: 12px; font-weight: 600; cursor: pointer;
+  background: #e0f2fe; color: #0369a1;
+}
+.client-analytics-btn:hover { background: #bae6fd; }
 </style>
 </head>
 <body>
@@ -281,6 +308,7 @@ input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
   <div class="nav-tabs">
     <div class="nav-tab active" onclick="showPage('clients', this)">All Clients</div>
     <div class="nav-tab" onclick="showPage('billing', this)">Billing Summary</div>
+    <div class="nav-tab" onclick="showPage('analytics', this)">📊 Analytics</div>
     <div class="nav-tab" onclick="showPage('ai-training', this)">🧠 AI Training</div>
   </div>
 
@@ -294,7 +322,6 @@ input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
         <div class="stat-card"><div class="stat-num" id="stat-trial">—</div><div class="stat-lbl">On Trial</div></div>
         <div class="stat-card"><div class="stat-num" id="stat-revenue">—</div><div class="stat-lbl">Revenue This Month</div></div>
       </div>
-
       <div class="table-card">
         <div class="table-header">
           <h3>All Clients</h3>
@@ -307,19 +334,51 @@ input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
           <thead>
             <tr>
               <th><input type="checkbox" id="select-all" onchange="toggleSelectAll(this)"></th>
-              <th>Business</th>
-              <th>Email</th>
-              <th>Account</th>
-              <th>Trial Info</th>
-              <th>Convos</th>
-              <th>Profit</th>
-              <th>Actions</th>
+              <th>Business</th><th>Email</th><th>Account</th>
+              <th>Trial Info</th><th>Convos</th><th>Profit</th><th>Actions</th>
             </tr>
           </thead>
           <tbody id="clients-table-body">
             <tr><td colspan="8" class="loading">Loading clients...</td></tr>
           </tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- ANALYTICS PAGE -->
+    <div class="page" id="page-analytics">
+      <div class="stats-row" id="analytics-stats-row">
+        <div class="analytics-stat"><div class="num" id="an-total-convos">—</div><div class="lbl">Total Conversations (30 days)</div></div>
+        <div class="analytics-stat"><div class="num" id="an-today">—</div><div class="lbl">Today</div></div>
+        <div class="analytics-stat"><div class="num" id="an-best-day">—</div><div class="lbl">Best Day</div></div>
+        <div class="analytics-stat"><div class="num" id="an-active-clients">—</div><div class="lbl">Active Clients</div></div>
+      </div>
+
+      <div class="chart-card">
+        <div class="chart-title">
+          Conversations — Last 30 Days (All Clients)
+          <span class="chart-subtitle">One conversation = one visitor message</span>
+        </div>
+        <canvas id="admin-daily-chart" height="80"></canvas>
+      </div>
+
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-title">Top Clients by Conversations</div>
+          <canvas id="admin-client-chart" height="200"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">
+            Client Analytics
+            <span class="chart-subtitle">Select a client to view their chart</span>
+          </div>
+          <select id="client-analytics-select" onchange="loadClientAnalyticsChart()"
+            style="width:100%;padding:9px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;margin-bottom:16px;outline:none">
+            <option value="">— Select a client —</option>
+          </select>
+          <div id="client-analytics-stats" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px"></div>
+          <canvas id="client-daily-chart" height="200"></canvas>
+        </div>
       </div>
     </div>
 
@@ -332,12 +391,7 @@ input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
         </div>
         <table>
           <thead>
-            <tr>
-              <th>Business</th>
-              <th>Knowledge Base</th>
-              <th>FAQ Items</th>
-              <th>Actions</th>
-            </tr>
+            <tr><th>Business</th><th>Knowledge Base</th><th>FAQ Items</th><th>Actions</th></tr>
           </thead>
           <tbody id="ai-training-table-body">
             <tr><td colspan="4" class="loading">Loading...</td></tr>
@@ -352,8 +406,7 @@ input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
         <div class="table-header">
           <h3 id="billing-month-title">Monthly Billing Summary</h3>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <button class="export-btn" id="export-selected-btn" onclick="exportSelectedCSV()"
-              style="display:none;background:#059669">⬇ Export Selected</button>
+            <button class="export-btn" id="export-selected-btn" onclick="exportSelectedCSV()" style="display:none;background:#059669">⬇ Export Selected</button>
             <button class="export-btn" onclick="exportCSV()">⬇ Export All CSV</button>
           </div>
         </div>
@@ -408,14 +461,8 @@ input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
       <div id="duplicate-warning" class="msg-warning" style="display:none"></div>
     </div>
     <div class="form-grid">
-      <div class="form-group">
-        <label>Owner Name</label>
-        <input type="text" id="nc-name" placeholder="e.g. John Smith">
-      </div>
-      <div class="form-group">
-        <label>Business Name</label>
-        <input type="text" id="nc-business" placeholder="e.g. Glamour Hair Salon">
-      </div>
+      <div class="form-group"><label>Owner Name</label><input type="text" id="nc-name" placeholder="e.g. John Smith"></div>
+      <div class="form-group"><label>Business Name</label><input type="text" id="nc-business" placeholder="e.g. Glamour Hair Salon"></div>
       <div class="form-group">
         <label>Business Type</label>
         <select id="nc-type">
@@ -431,38 +478,14 @@ input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
           <option value="Other">Other</option>
         </select>
       </div>
-      <div class="form-group">
-        <label>Phone Number</label>
-        <input type="text" id="nc-phone" placeholder="e.g. +880 1234 567890" onblur="checkDuplicate()">
-      </div>
-      <div class="form-group">
-        <label>Email Address</label>
-        <input type="email" id="nc-email" placeholder="client@email.com" onblur="checkDuplicate()">
-      </div>
-      <div class="form-group">
-        <label>Password</label>
-        <input type="text" id="nc-password" placeholder="Set their login password">
-      </div>
-      <div class="form-group">
-        <label>Location</label>
-        <input type="text" id="nc-location" placeholder="e.g. Dhaka, Bangladesh">
-      </div>
-      <div class="form-group">
-        <label>Working Hours</label>
-        <input type="text" id="nc-hours" placeholder="e.g. Mon-Sat 9am-6pm">
-      </div>
-      <div class="form-group full">
-        <label>Website URL</label>
-        <input type="text" id="nc-website" placeholder="e.g. glamoursalon.com" onblur="checkDuplicate()">
-      </div>
-      <div class="form-group full">
-        <label>Services Offered</label>
-        <textarea id="nc-services" rows="2" placeholder="e.g. Haircut, Coloring, Hair Spa"></textarea>
-      </div>
-      <div class="form-group full">
-        <label>Business Description</label>
-        <textarea id="nc-desc" rows="2" placeholder="e.g. A premium hair salon serving Dhaka since 2015"></textarea>
-      </div>
+      <div class="form-group"><label>Phone Number</label><input type="text" id="nc-phone" placeholder="e.g. +880 1234 567890" onblur="checkDuplicate()"></div>
+      <div class="form-group"><label>Email Address</label><input type="email" id="nc-email" placeholder="client@email.com" onblur="checkDuplicate()"></div>
+      <div class="form-group"><label>Password</label><input type="text" id="nc-password" placeholder="Set their login password"></div>
+      <div class="form-group"><label>Location</label><input type="text" id="nc-location" placeholder="e.g. Dhaka, Bangladesh"></div>
+      <div class="form-group"><label>Working Hours</label><input type="text" id="nc-hours" placeholder="e.g. Mon-Sat 9am-6pm"></div>
+      <div class="form-group full"><label>Website URL</label><input type="text" id="nc-website" placeholder="e.g. glamoursalon.com" onblur="checkDuplicate()"></div>
+      <div class="form-group full"><label>Services Offered</label><textarea id="nc-services" rows="2" placeholder="e.g. Haircut, Coloring, Hair Spa"></textarea></div>
+      <div class="form-group full"><label>Business Description</label><textarea id="nc-desc" rows="2" placeholder="e.g. A premium hair salon serving Dhaka since 2015"></textarea></div>
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeAddClient()">Cancel</button>
@@ -493,46 +516,16 @@ input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
     </div>
     <div class="form-grid">
       <input type="hidden" id="edit-client-id">
-      <div class="form-group">
-        <label>Business Name</label>
-        <input type="text" id="edit-business">
-      </div>
-      <div class="form-group">
-        <label>Email</label>
-        <input type="email" id="edit-email" disabled style="background:#f1f5f9;color:#94a3b8">
-      </div>
-      <div class="form-group">
-        <label>Phone</label>
-        <input type="text" id="edit-phone">
-      </div>
-      <div class="form-group">
-        <label>Location</label>
-        <input type="text" id="edit-location">
-      </div>
-      <div class="form-group">
-        <label>Working Hours</label>
-        <input type="text" id="edit-hours">
-      </div>
-      <div class="form-group">
-        <label>Bot Name</label>
-        <input type="text" id="edit-bot-name">
-      </div>
-      <div class="form-group full">
-        <label>Website</label>
-        <input type="text" id="edit-website">
-      </div>
-      <div class="form-group full">
-        <label>Services</label>
-        <textarea id="edit-services" rows="2"></textarea>
-      </div>
-      <div class="form-group full">
-        <label>Business Description</label>
-        <textarea id="edit-desc" rows="2"></textarea>
-      </div>
-      <div class="form-group full">
-        <label>Custom Instructions</label>
-        <textarea id="edit-custom" rows="2"></textarea>
-      </div>
+      <div class="form-group"><label>Business Name</label><input type="text" id="edit-business"></div>
+      <div class="form-group"><label>Email</label><input type="email" id="edit-email" disabled style="background:#f1f5f9;color:#94a3b8"></div>
+      <div class="form-group"><label>Phone</label><input type="text" id="edit-phone"></div>
+      <div class="form-group"><label>Location</label><input type="text" id="edit-location"></div>
+      <div class="form-group"><label>Working Hours</label><input type="text" id="edit-hours"></div>
+      <div class="form-group"><label>Bot Name</label><input type="text" id="edit-bot-name"></div>
+      <div class="form-group full"><label>Website</label><input type="text" id="edit-website"></div>
+      <div class="form-group full"><label>Services</label><textarea id="edit-services" rows="2"></textarea></div>
+      <div class="form-group full"><label>Business Description</label><textarea id="edit-desc" rows="2"></textarea></div>
+      <div class="form-group full"><label>Custom Instructions</label><textarea id="edit-custom" rows="2"></textarea></div>
     </div>
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal('edit-modal')">Cancel</button>
@@ -551,20 +544,17 @@ input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; }
       <button class="modal-close" onclick="closeModal('ai-modal')">✕</button>
     </div>
     <input type="hidden" id="ai-client-id">
-
     <div class="profile-section">
       <h4>📚 Knowledge Base</h4>
       <p style="font-size:12px;color:#64748b;margin-bottom:10px">Paste anything here — website content, services, pricing, policies. The AI will use this to answer visitor questions accurately.</p>
       <textarea id="ai-knowledge-base" rows="8" style="width:100%;padding:12px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;resize:vertical;font-family:Arial,sans-serif" placeholder="Paste business info, services, pricing, FAQs, policies, product details here..."></textarea>
     </div>
-
     <div class="profile-section" style="margin-top:20px">
       <h4>❓ FAQ Builder</h4>
       <p style="font-size:12px;color:#64748b;margin-bottom:10px">Add specific Q&A pairs. The AI will answer these questions exactly as written.</p>
       <div id="faq-list"></div>
       <button onclick="addFaqRow()" style="margin-top:10px;padding:8px 16px;background:#e0f2fe;color:#0369a1;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">+ Add FAQ Item</button>
     </div>
-
     <div class="modal-footer">
       <button class="btn-cancel" onclick="closeModal('ai-modal')">Cancel</button>
       <button class="btn-save" onclick="saveAiTraining()">💾 Save AI Training</button>
@@ -591,6 +581,9 @@ let adminToken = "";
 let allClients = [];
 let billingData = [];
 let selectedAccountType = "trial";
+let adminDailyChart = null;
+let adminClientChart = null;
+let clientDailyChart = null;
 
 async function doLogin() {
   const pw = document.getElementById("admin-password").value;
@@ -625,25 +618,19 @@ function showPage(name, tab) {
   document.getElementById("page-" + name).classList.add("active");
   tab.classList.add("active");
   if (name === "billing") loadBilling();
+  if (name === "analytics") loadAnalytics();
   if (name === "ai-training") loadAiTrainingTable();
 }
 
-function closeModal(id) {
-  document.getElementById(id).classList.remove("open");
-}
+function closeModal(id) { document.getElementById(id).classList.remove("open"); }
 
-// ============ ACCOUNT TYPE TOGGLE ============
+// ============ ACCOUNT TYPE ============
 function setAccountType(type) {
   selectedAccountType = type;
   const trialBtn = document.getElementById("btn-trial");
   const paidBtn = document.getElementById("btn-paid");
-  trialBtn.className = "";
-  paidBtn.className = "";
-  if (type === "trial") {
-    trialBtn.className = "selected-trial";
-  } else {
-    paidBtn.className = "selected-paid";
-  }
+  trialBtn.className = type === "trial" ? "selected-trial" : "";
+  paidBtn.className = type === "paid" ? "selected-paid" : "";
 }
 
 // ============ DUPLICATE CHECK ============
@@ -663,7 +650,7 @@ async function checkDuplicate() {
     const createBtn = document.getElementById("create-btn");
     if (data.duplicate_found) {
       const match = data.matches[0];
-      warningEl.innerHTML = `⚠️ <strong>Duplicate Found!</strong> This business already had a trial (matched by ${match.field}: ${match.business}). You can only create a PAID account for them.`;
+      warningEl.innerHTML = `⚠️ <strong>Duplicate Found!</strong> Matched by ${match.field}: ${match.business}. Paid account only.`;
       warningEl.style.display = "block";
       setAccountType("paid");
       createBtn.style.background = "#dc2626";
@@ -673,7 +660,7 @@ async function checkDuplicate() {
       createBtn.style.background = "";
       createBtn.textContent = "Create Client";
     }
-  } catch(e) { console.log("Duplicate check error:", e); }
+  } catch(e) {}
 }
 
 // ============ LOAD CLIENTS ============
@@ -690,10 +677,21 @@ async function loadClients() {
     document.getElementById("stat-trial").textContent = trial;
     document.getElementById("stat-revenue").textContent = "$" + totalRev.toFixed(2);
     renderClientsTable();
+    populateClientSelect();
   } catch(e) {
-    document.getElementById("clients-table-body").innerHTML =
-      '<tr><td colspan="8" class="loading">Error loading clients.</td></tr>';
+    document.getElementById("clients-table-body").innerHTML = '<tr><td colspan="8" class="loading">Error loading clients.</td></tr>';
   }
+}
+
+function populateClientSelect() {
+  const sel = document.getElementById("client-analytics-select");
+  sel.innerHTML = '<option value="">— Select a client —</option>';
+  allClients.forEach(c => {
+    const opt = document.createElement("option");
+    opt.value = c.id;
+    opt.textContent = c.business_name;
+    sel.appendChild(opt);
+  });
 }
 
 function renderClientsTable() {
@@ -709,57 +707,169 @@ function renderClientsTable() {
       : accountType === "expired"
       ? '<span class="status-badge status-expired">❌ EXPIRED</span>'
       : '<span class="status-badge status-paid">✅ PAID</span>';
-
-    const trialInfo = accountType === "trial" && c.trial_conversations_used !== undefined
+    const trialInfo = accountType === "trial"
       ? `<div class="trial-progress">
-          <div style="font-size:11px;color:#92400e">${c.trial_conversations_used || 0}/${c.trial_conversation_limit || 10} chats used</div>
-          <div class="trial-bar-bg"><div class="trial-bar-fill" style="width:${Math.min(100, ((c.trial_conversations_used||0)/(c.trial_conversation_limit||10))*100)}%"></div></div>
+          <div style="font-size:11px;color:#92400e">${c.trial_conversations_used||0}/${c.trial_conversation_limit||10} chats</div>
+          <div class="trial-bar-bg"><div class="trial-bar-fill" style="width:${Math.min(100,((c.trial_conversations_used||0)/(c.trial_conversation_limit||10))*100)}%"></div></div>
           ${c.trial_end ? `<div class="trial-info">Expires: ${new Date(c.trial_end).toLocaleDateString()}</div>` : ""}
         </div>`
       : accountType === "expired"
       ? '<div style="font-size:11px;color:#991b1b">Trial ended</div>'
       : '<div style="font-size:11px;color:#166534">Full access</div>';
-
     const convertBtn = (accountType === "trial" || accountType === "expired")
-      ? `<button class="btn-sm btn-paid" onclick="convertToPaid('${c.id}')">💳 Convert to Paid</button>`
-      : "";
-
-    return `
-      <tr>
-        <td><input type="checkbox" class="client-checkbox" value="${c.id}" onchange="updateDeleteBtn()"></td>
-        <td><strong>${c.business_name || "—"}</strong></td>
-        <td style="font-size:12px">${c.email || "—"}</td>
-        <td>${accountBadge}</td>
-        <td>${trialInfo}</td>
-        <td>${c.conversations_this_month}</td>
-        <td class="profit-green">$${c.your_profit.toFixed(2)}</td>
-        <td style="display:flex;gap:5px;flex-wrap:wrap">
-          <button class="btn-sm btn-view" onclick="viewProfile('${c.id}')">👤</button>
-          <button class="btn-sm btn-edit" onclick="openEdit('${c.id}')">✏️</button>
-          <button class="btn-sm btn-${c.status === 'active' ? 'pause' : 'activate'}" onclick="toggleClient('${c.id}')">
-            ${c.status === "active" ? "⏸" : "▶"}
-          </button>
-          <button class="btn-sm btn-view" onclick="viewConvos('${c.id}','${c.business_name}')">💬</button>
-          <button class="btn-sm" style="background:#e9d5ff;color:#6b21a8" onclick="openAiTraining('${c.id}','${c.business_name}')">🧠</button>
-          ${convertBtn}
-        </td>
-      </tr>
-    `;
+      ? `<button class="btn-sm btn-paid" onclick="convertToPaid('${c.id}')">💳 Paid</button>` : "";
+    return `<tr>
+      <td><input type="checkbox" class="client-checkbox" value="${c.id}" onchange="updateDeleteBtn()"></td>
+      <td><strong>${c.business_name||"—"}</strong></td>
+      <td style="font-size:12px">${c.email||"—"}</td>
+      <td>${accountBadge}</td>
+      <td>${trialInfo}</td>
+      <td>${c.conversations_this_month}</td>
+      <td class="profit-green">$${c.your_profit.toFixed(2)}</td>
+      <td style="display:flex;gap:4px;flex-wrap:wrap">
+        <button class="btn-sm btn-view" onclick="viewProfile('${c.id}')">👤</button>
+        <button class="btn-sm btn-edit" onclick="openEdit('${c.id}')">✏️</button>
+        <button class="btn-sm btn-${c.status==='active'?'pause':'activate'}" onclick="toggleClient('${c.id}')">${c.status==="active"?"⏸":"▶"}</button>
+        <button class="btn-sm btn-view" onclick="viewConvos('${c.id}','${c.business_name}')">💬</button>
+        <button class="btn-sm" style="background:#e9d5ff;color:#6b21a8" onclick="openAiTraining('${c.id}','${c.business_name}')">🧠</button>
+        ${convertBtn}
+      </td>
+    </tr>`;
   }).join("");
+}
+
+// ============ ANALYTICS ============
+async function loadAnalytics() {
+  try {
+    const res = await fetch(API + "/admin/analytics?x_admin_token=" + adminToken);
+    const data = await res.json();
+    const daily = data.daily || [];
+    const perClient = data.per_client || [];
+
+    // Stats
+    const total = daily.reduce((s,d) => s + d.conversations, 0);
+    const today = daily[daily.length-1]?.conversations || 0;
+    const best = Math.max(...daily.map(d => d.conversations));
+    document.getElementById("an-total-convos").textContent = total;
+    document.getElementById("an-today").textContent = today;
+    document.getElementById("an-best-day").textContent = best;
+    document.getElementById("an-active-clients").textContent = allClients.filter(c => c.status === "active").length;
+
+    // Daily chart
+    const labels = daily.map(d => d.label);
+    const values = daily.map(d => d.conversations);
+    if (adminDailyChart) adminDailyChart.destroy();
+    const ctx1 = document.getElementById("admin-daily-chart").getContext("2d");
+    adminDailyChart = new Chart(ctx1, {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [{
+          label: "Conversations",
+          data: values,
+          backgroundColor: "rgba(26,86,160,0.7)",
+          borderColor: "#1a56a0",
+          borderWidth: 1,
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, ticks: { stepSize: 1 } },
+          x: { ticks: { maxTicksLimit: 10 } }
+        }
+      }
+    });
+
+    // Per client bar chart
+    const topClients = perClient.slice(0, 8);
+    if (adminClientChart) adminClientChart.destroy();
+    const ctx2 = document.getElementById("admin-client-chart").getContext("2d");
+    adminClientChart = new Chart(ctx2, {
+      type: "bar",
+      data: {
+        labels: topClients.map(c => c.business_name),
+        datasets: [{
+          label: "Total Conversations",
+          data: topClients.map(c => c.total_conversations),
+          backgroundColor: [
+            "#1a56a0","#2e75c8","#3b82f6","#60a5fa",
+            "#93c5fd","#6a4c93","#f18f01","#c73e1d"
+          ],
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+      }
+    });
+
+  } catch(e) {
+    console.log("Analytics error:", e);
+  }
+}
+
+async function loadClientAnalyticsChart() {
+  const clientId = document.getElementById("client-analytics-select").value;
+  if (!clientId) return;
+  const client = allClients.find(c => c.id === clientId);
+  try {
+    const res = await fetch(API + "/analytics/" + clientId);
+    const data = await res.json();
+    const daily = data.daily || [];
+
+    document.getElementById("client-analytics-stats").innerHTML = `
+      <div style="background:#f0f7ff;border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:24px;font-weight:700;color:#1a56a0">${data.total_this_month||0}</div>
+        <div style="font-size:11px;color:#64748b;font-weight:600">This Month</div>
+      </div>
+      <div style="background:#f0fdf4;border-radius:8px;padding:12px;text-align:center">
+        <div style="font-size:24px;font-weight:700;color:#166534">${data.total_all_time||0}</div>
+        <div style="font-size:11px;color:#64748b;font-weight:600">All Time</div>
+      </div>
+    `;
+
+    if (clientDailyChart) clientDailyChart.destroy();
+    const ctx = document.getElementById("client-daily-chart").getContext("2d");
+    clientDailyChart = new Chart(ctx, {
+      type: "line",
+      data: {
+        labels: daily.map(d => d.label),
+        datasets: [{
+          label: "Conversations",
+          data: daily.map(d => d.conversations),
+          borderColor: "#1a56a0",
+          backgroundColor: "rgba(26,86,160,0.1)",
+          fill: true,
+          tension: 0.4,
+          pointRadius: 3
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, ticks: { stepSize: 1 } },
+          x: { ticks: { maxTicksLimit: 8 } }
+        }
+      }
+    });
+  } catch(e) { console.log("Client analytics error:", e); }
 }
 
 // ============ CONVERT TO PAID ============
 async function convertToPaid(clientId) {
   const client = allClients.find(c => c.id === clientId);
-  if (!confirm(`Convert ${client?.business_name} to PAID account? This will give them full access.`)) return;
+  if (!confirm(`Convert ${client?.business_name} to PAID?`)) return;
   try {
-    const res = await fetch(API + "/admin/convert-to-paid/" + clientId + "?x_admin_token=" + adminToken, {method: "POST"});
+    const res = await fetch(API + "/admin/convert-to-paid/" + clientId + "?x_admin_token=" + adminToken, {method:"POST"});
     const data = await res.json();
-    if (data.success) {
-      alert("✅ Client converted to paid successfully!");
-      loadClients();
-    }
-  } catch(e) { alert("Error converting client"); }
+    if (data.success) { alert("✅ Converted to paid!"); loadClients(); }
+  } catch(e) { alert("Error"); }
 }
 
 // ============ SELECT & DELETE ============
@@ -767,22 +877,16 @@ function toggleSelectAll(checkbox) {
   document.querySelectorAll(".client-checkbox").forEach(cb => cb.checked = checkbox.checked);
   updateDeleteBtn();
 }
-
 function updateDeleteBtn() {
   const checked = document.querySelectorAll(".client-checkbox:checked").length;
   document.getElementById("delete-selected-btn").style.display = checked > 0 ? "block" : "none";
-  document.getElementById("select-all").checked =
-    checked === document.querySelectorAll(".client-checkbox").length && checked > 0;
+  document.getElementById("select-all").checked = checked === document.querySelectorAll(".client-checkbox").length && checked > 0;
 }
-
 async function deleteSelected() {
   const checked = Array.from(document.querySelectorAll(".client-checkbox:checked")).map(cb => cb.value);
-  if (checked.length === 0) return;
-  if (!confirm(`Delete ${checked.length} client(s)? This cannot be undone.`)) return;
+  if (!checked.length || !confirm(`Delete ${checked.length} client(s)?`)) return;
   for (const id of checked) {
-    try {
-      await fetch(API + "/admin/clients/" + id + "?x_admin_token=" + adminToken, {method: "DELETE"});
-    } catch(e) { console.log("Delete error:", e); }
+    try { await fetch(API + "/admin/clients/" + id + "?x_admin_token=" + adminToken, {method:"DELETE"}); } catch(e) {}
   }
   document.getElementById("delete-selected-btn").style.display = "none";
   document.getElementById("select-all").checked = false;
@@ -804,66 +908,49 @@ async function viewProfile(clientId) {
     const trialData = await trialRes.json();
     const s = settingsData.settings || {};
     const embedCode = `&lt;script src="https://emartit.github.io/eMart-IT-Chatbot/widget.js?client=${clientId}"&gt;&lt;/script&gt;`;
-
     const trialSection = trialData.account_type === "trial" ? `
-      <div class="profile-section">
-        <h4>Trial Status</h4>
+      <div class="profile-section"><h4>Trial Status</h4>
         <div class="profile-grid">
-          <div class="profile-item"><label>Account Type</label><p><span class="status-badge status-trial">🎯 TRIAL</span></p></div>
-          <div class="profile-item"><label>Days Remaining</label><p>${trialData.days_remaining} days (${trialData.hours_remaining} hours)</p></div>
-          <div class="profile-item"><label>Conversations Used</label><p>${trialData.conversations_used} of ${trialData.conversations_limit}</p></div>
-          <div class="profile-item"><label>Conversations Left</label><p>${trialData.conversations_remaining}</p></div>
+          <div class="profile-item"><label>Type</label><p><span class="status-badge status-trial">🎯 TRIAL</span></p></div>
+          <div class="profile-item"><label>Days Left</label><p>${trialData.days_remaining} days</p></div>
+          <div class="profile-item"><label>Chats Used</label><p>${trialData.conversations_used}/${trialData.conversations_limit}</p></div>
+          <div class="profile-item"><label>Chats Left</label><p>${trialData.conversations_remaining}</p></div>
         </div>
       </div>` : trialData.account_type === "expired" ? `
-      <div class="profile-section">
-        <h4>Trial Status</h4>
-        <div style="background:#fee2e2;padding:12px;border-radius:8px;color:#991b1b;font-size:13px">
-          ❌ Trial has expired. Convert to paid to restore access.
-        </div>
+      <div class="profile-section"><h4>Trial Status</h4>
+        <div style="background:#fee2e2;padding:12px;border-radius:8px;color:#991b1b;font-size:13px">❌ Trial expired.</div>
       </div>` : `
-      <div class="profile-section">
-        <h4>Account Status</h4>
-        <div style="background:#dcfce7;padding:12px;border-radius:8px;color:#166534;font-size:13px">
-          ✅ Paid account — Full access active.
-        </div>
+      <div class="profile-section"><h4>Account</h4>
+        <div style="background:#dcfce7;padding:12px;border-radius:8px;color:#166534;font-size:13px">✅ Paid — Full access.</div>
       </div>`;
-
     document.getElementById("profile-body").innerHTML = `
-      <div class="profile-section">
-        <h4>Account Details</h4>
+      <div class="profile-section"><h4>Account Details</h4>
         <div class="profile-grid">
-          <div class="profile-item"><label>Business Name</label><p>${client.business_name || "—"}</p></div>
-          <div class="profile-item"><label>Email</label><p>${client.email || "—"}</p></div>
+          <div class="profile-item"><label>Business</label><p>${client.business_name||"—"}</p></div>
+          <div class="profile-item"><label>Email</label><p>${client.email||"—"}</p></div>
           <div class="profile-item"><label>Status</label><p><span class="status-badge status-${client.status}">${client.status.toUpperCase()}</span></p></div>
           <div class="profile-item"><label>Conversations</label><p>${client.conversations_this_month}</p></div>
         </div>
       </div>
       ${trialSection}
-      <div class="profile-section">
-        <h4>Bot Settings</h4>
+      <div class="profile-section"><h4>Bot Settings</h4>
         <div class="profile-grid">
-          <div class="profile-item"><label>Bot Name</label><p>${s.bot_name || "Assistant"}</p></div>
-          <div class="profile-item"><label>Phone</label><p>${s.phone || "—"}</p></div>
-          <div class="profile-item"><label>Location</label><p>${s.location || "—"}</p></div>
-          <div class="profile-item"><label>Working Hours</label><p>${s.working_hours || "—"}</p></div>
-          <div class="profile-item" style="grid-column:1/-1"><label>Services</label><p>${s.services || "—"}</p></div>
-          <div class="profile-item" style="grid-column:1/-1"><label>Description</label><p>${s.business_description || "—"}</p></div>
+          <div class="profile-item"><label>Bot Name</label><p>${s.bot_name||"Assistant"}</p></div>
+          <div class="profile-item"><label>Phone</label><p>${s.phone||"—"}</p></div>
+          <div class="profile-item"><label>Location</label><p>${s.location||"—"}</p></div>
+          <div class="profile-item"><label>Hours</label><p>${s.working_hours||"—"}</p></div>
+          <div class="profile-item" style="grid-column:1/-1"><label>Services</label><p>${s.services||"—"}</p></div>
         </div>
       </div>
-      <div class="profile-section">
-        <h4>Embed Code</h4>
-        <div class="embed-display">${embedCode}</div>
-      </div>
+      <div class="profile-section"><h4>Embed Code</h4><div class="embed-display">${embedCode}</div></div>
       <div class="modal-footer">
         <button class="btn-cancel" onclick="closeModal('profile-modal')">Close</button>
-        ${(trialData.account_type === "trial" || trialData.account_type === "expired") ?
-          `<button class="btn-paid btn-save" onclick="closeModal('profile-modal');convertToPaid('${clientId}')">💳 Convert to Paid</button>` : ""}
+        ${(trialData.account_type==="trial"||trialData.account_type==="expired")?`<button class="btn-paid btn-save" onclick="closeModal('profile-modal');convertToPaid('${clientId}')">💳 Convert</button>`:""}
         <button class="btn-save" onclick="closeModal('profile-modal');openEdit('${clientId}')">✏️ Edit</button>
         <button class="btn-save" style="background:#6b21a8" onclick="closeModal('profile-modal');openAiTraining('${clientId}','${client.business_name}')">🧠 AI Training</button>
-      </div>
-    `;
+      </div>`;
   } catch(e) {
-    document.getElementById("profile-body").innerHTML = '<p class="loading">Error loading profile.</p>';
+    document.getElementById("profile-body").innerHTML = '<p class="loading">Error loading.</p>';
   }
 }
 
@@ -889,7 +976,7 @@ async function openEdit(clientId) {
     document.getElementById("edit-desc").value = s.business_description || "";
     document.getElementById("edit-custom").value = s.custom_prompt || "";
     document.getElementById("edit-website").value = s.website || "";
-  } catch(e) { console.log("Load settings error:", e); }
+  } catch(e) {}
   document.getElementById("edit-modal").classList.add("open");
 }
 
@@ -900,7 +987,7 @@ async function saveEdit() {
   errEl.style.display = "none"; sucEl.style.display = "none";
   try {
     await fetch(API + "/clients/settings", {
-      method: "POST", headers: {"Content-Type": "application/json"},
+      method: "POST", headers: {"Content-Type":"application/json"},
       body: JSON.stringify({
         client_id: clientId,
         business_description: document.getElementById("edit-desc").value,
@@ -914,7 +1001,7 @@ async function saveEdit() {
         custom_prompt: document.getElementById("edit-custom").value
       })
     });
-    sucEl.textContent = "✅ Settings saved!";
+    sucEl.textContent = "✅ Saved!";
     sucEl.style.display = "block";
     setTimeout(() => { closeModal("edit-modal"); loadClients(); }, 2000);
   } catch(e) {
@@ -929,7 +1016,7 @@ async function toggleClient(clientId) {
     const res = await fetch(API + "/admin/clients/" + clientId + "/toggle?x_admin_token=" + adminToken, {method:"POST"});
     const data = await res.json();
     if (data.success) loadClients();
-  } catch(e) { alert("Error toggling client"); }
+  } catch(e) { alert("Error"); }
 }
 
 // ============ VIEW CONVERSATIONS ============
@@ -941,18 +1028,10 @@ async function viewConvos(clientId, businessName) {
     const res = await fetch(API + "/admin/clients/" + clientId + "/conversations?x_admin_token=" + adminToken);
     const data = await res.json();
     const convos = data.conversations || [];
-    if (convos.length === 0) {
-      document.getElementById("modal-body").innerHTML = '<div class="convo-empty">No conversations yet.</div>';
-      return;
-    }
+    if (!convos.length) { document.getElementById("modal-body").innerHTML = '<div class="convo-empty">No conversations yet.</div>'; return; }
     document.getElementById("modal-body").innerHTML = convos.map(c => {
-      const isBot = c.message && (c.message.startsWith("Hi there") || c.message.startsWith("Hello") ||
-        c.message.startsWith("Thank you") || c.message.startsWith("Welcome"));
-      const role = isBot ? "bot" : "user";
-      return `<div class="convo-bubble convo-${role}">
-        <div class="convo-role">${role === "user" ? "Visitor" : "Bot"}</div>
-        ${c.message || ""}
-      </div>`;
+      const role = c.role === "assistant" ? "bot" : "user";
+      return `<div class="convo-bubble convo-${role}"><div class="convo-role">${role==="user"?"Visitor":"Bot"}</div>${c.message||""}</div>`;
     }).join("");
   } catch(e) {
     document.getElementById("modal-body").innerHTML = '<div class="convo-empty">Error loading.</div>';
@@ -962,41 +1041,26 @@ async function viewConvos(clientId, businessName) {
 // ============ AI TRAINING ============
 async function loadAiTrainingTable() {
   const tbody = document.getElementById("ai-training-table-body");
-  if (!allClients.length) {
-    tbody.innerHTML = '<tr><td colspan="4" class="loading">No clients found. Go to All Clients tab first.</td></tr>';
-    return;
-  }
-  tbody.innerHTML = '<tr><td colspan="4" class="loading">Loading AI training data...</td></tr>';
+  if (!allClients.length) { tbody.innerHTML = '<tr><td colspan="4" class="loading">No clients found.</td></tr>'; return; }
+  tbody.innerHTML = '<tr><td colspan="4" class="loading">Loading...</td></tr>';
   try {
     const rows = await Promise.all(allClients.map(async c => {
       try {
         const res = await fetch(API + "/clients/" + c.id + "/settings");
         const data = await res.json();
         const s = data.settings || {};
-        const kbLen = s.knowledge_base ? s.knowledge_base.length : 0;
-        const faqCount = s.faq_items ? s.faq_items.length : 0;
-        return { c, kbLen, faqCount };
+        return { c, kbLen: s.knowledge_base ? s.knowledge_base.length : 0, faqCount: s.faq_items ? s.faq_items.length : 0 };
       } catch(e) { return { c, kbLen: 0, faqCount: 0 }; }
     }));
     tbody.innerHTML = rows.map(({ c, kbLen, faqCount }) => `
       <tr>
-        <td>
-          <strong>${c.business_name}</strong><br>
-          <span style="font-size:11px;color:#64748b">${c.email}</span>
-        </td>
-        <td>${kbLen > 0
-          ? '<span style="color:#166534;font-weight:600">✅ ' + kbLen + ' characters</span>'
-          : '<span style="color:#94a3b8">Not set</span>'}</td>
-        <td>${faqCount > 0
-          ? '<span style="color:#166534;font-weight:600">✅ ' + faqCount + ' items</span>'
-          : '<span style="color:#94a3b8">None</span>'}</td>
-        <td>
-          <button class="btn-sm" style="background:#e9d5ff;color:#6b21a8" onclick="openAiTraining('${c.id}','${c.business_name}')">🧠 Train AI</button>
-        </td>
-      </tr>
-    `).join("");
+        <td><strong>${c.business_name}</strong><br><span style="font-size:11px;color:#64748b">${c.email}</span></td>
+        <td>${kbLen > 0 ? `<span style="color:#166534;font-weight:600">✅ ${kbLen} chars</span>` : '<span style="color:#94a3b8">Not set</span>'}</td>
+        <td>${faqCount > 0 ? `<span style="color:#166534;font-weight:600">✅ ${faqCount} items</span>` : '<span style="color:#94a3b8">None</span>'}</td>
+        <td><button class="btn-sm" style="background:#e9d5ff;color:#6b21a8" onclick="openAiTraining('${c.id}','${c.business_name}')">🧠 Train AI</button></td>
+      </tr>`).join("");
   } catch(e) {
-    tbody.innerHTML = '<tr><td colspan="4" class="loading">Error loading.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" class="loading">Error.</td></tr>';
   }
 }
 
@@ -1014,26 +1078,18 @@ async function openAiTraining(clientId, businessName) {
     const s = data.settings || {};
     document.getElementById("ai-knowledge-base").value = s.knowledge_base || "";
     const faqs = s.faq_items || [];
-    if (faqs.length > 0) {
-      faqs.forEach(faq => addFaqRow(faq.question || "", faq.answer || ""));
-    } else {
-      addFaqRow();
-    }
+    faqs.length > 0 ? faqs.forEach(f => addFaqRow(f.question||"", f.answer||"")) : addFaqRow();
   } catch(e) { addFaqRow(); }
 }
 
-function addFaqRow(question = "", answer = "") {
+function addFaqRow(question="", answer="") {
   const div = document.createElement("div");
   div.className = "faq-row";
   div.style.cssText = "display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-bottom:8px;align-items:start";
   div.innerHTML = `
-    <input type="text" placeholder="Q: What are your opening hours?" value="${question.replace(/"/g, '&quot;')}"
-      style="padding:9px 12px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;width:100%">
-    <input type="text" placeholder="A: We are open Monday to Friday 9am-6pm" value="${answer.replace(/"/g, '&quot;')}"
-      style="padding:9px 12px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;width:100%">
-    <button onclick="this.parentElement.remove()"
-      style="padding:9px 12px;background:#fee2e2;color:#991b1b;border:none;border-radius:8px;cursor:pointer;font-weight:700">✕</button>
-  `;
+    <input type="text" placeholder="Q: What are your hours?" value="${question.replace(/"/g,'&quot;')}" style="padding:9px 12px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;width:100%">
+    <input type="text" placeholder="A: We are open 9am-6pm" value="${answer.replace(/"/g,'&quot;')}" style="padding:9px 12px;border:1.5px solid #d1d5db;border-radius:8px;font-size:13px;outline:none;width:100%">
+    <button onclick="this.parentElement.remove()" style="padding:9px 12px;background:#fee2e2;color:#991b1b;border:none;border-radius:8px;cursor:pointer;font-weight:700">✕</button>`;
   document.getElementById("faq-list").appendChild(div);
 }
 
@@ -1042,54 +1098,39 @@ async function saveAiTraining() {
   const knowledgeBase = document.getElementById("ai-knowledge-base").value;
   const errEl = document.getElementById("ai-error");
   const sucEl = document.getElementById("ai-success");
-  errEl.style.display = "none";
-  sucEl.style.display = "none";
-
-  const faqRows = document.querySelectorAll(".faq-row");
+  errEl.style.display = "none"; sucEl.style.display = "none";
   const faqItems = [];
-  faqRows.forEach(row => {
+  document.querySelectorAll(".faq-row").forEach(row => {
     const inputs = row.querySelectorAll("input");
     const q = inputs[0].value.trim();
     const a = inputs[1].value.trim();
     if (q && a) faqItems.push({ question: q, answer: a });
   });
-
   try {
     const settingsRes = await fetch(API + "/clients/" + clientId + "/settings");
     const settingsData = await settingsRes.json();
     const s = settingsData.settings || {};
-
     const res = await fetch(API + "/clients/settings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: "POST", headers: {"Content-Type":"application/json"},
       body: JSON.stringify({
         client_id: clientId,
-        business_description: s.business_description || "",
-        services: s.services || "",
-        working_hours: s.working_hours || "",
-        location: s.location || "",
-        phone: s.phone || "",
-        website: s.website || "",
-        bot_name: s.bot_name || "Assistant",
-        bot_color: s.bot_color || "#1a569a",
-        bubble_color: s.bubble_color || "#1a569a",
-        header_color: s.header_color || "#1a569a",
-        chat_position: s.chat_position || "right",
-        bot_avatar: s.bot_avatar || "robot",
-        welcome_message: s.welcome_message || "Hi! How can I help you today? 😊",
-        custom_prompt: s.custom_prompt || "",
-        bot_avatar_url: s.bot_avatar_url || "",
-        knowledge_base: knowledgeBase,
-        faq_items: faqItems
+        business_description: s.business_description||"",
+        services: s.services||"", working_hours: s.working_hours||"",
+        location: s.location||"", phone: s.phone||"", website: s.website||"",
+        bot_name: s.bot_name||"Assistant", bot_color: s.bot_color||"#1a569a",
+        bubble_color: s.bubble_color||"#1a569a", header_color: s.header_color||"#1a569a",
+        chat_position: s.chat_position||"right", bot_avatar: s.bot_avatar||"robot",
+        welcome_message: s.welcome_message||"Hi! How can I help you today? 😊",
+        custom_prompt: s.custom_prompt||"", bot_avatar_url: s.bot_avatar_url||"",
+        knowledge_base: knowledgeBase, faq_items: faqItems
       })
     });
-
     if (!res.ok) throw new Error("Failed to save");
-    sucEl.textContent = "✅ AI Training saved! The chatbot will now use this knowledge immediately.";
+    sucEl.textContent = "✅ AI Training saved! Chatbot updated immediately.";
     sucEl.style.display = "block";
     setTimeout(() => { closeModal("ai-modal"); loadAiTrainingTable(); }, 2500);
   } catch(e) {
-    errEl.textContent = "Error saving: " + e.message;
+    errEl.textContent = "Error: " + e.message;
     errEl.style.display = "block";
   }
 }
@@ -1100,20 +1141,19 @@ async function loadBilling() {
     const res = await fetch(API + "/admin/billing?x_admin_token=" + adminToken);
     const data = await res.json();
     document.getElementById("billing-month-title").textContent = "Billing Summary — " + data.month;
-    billingData = (data.rows || []).map(r => {
+    billingData = (data.rows||[]).map(r => {
       const client = allClients.find(c => c.business_name === r.business_name) || {};
-      return { ...r, email: client.email || "—", status: client.status || "active", id: client.id || "" };
+      return {...r, email: client.email||"—", status: client.status||"active", id: client.id||""};
     });
     filterBillingTable();
     const t = data.totals || {};
     document.getElementById("billing-totals").innerHTML = `
       <div class="stat-card"><div class="stat-num">${t.conversations||0}</div><div class="stat-lbl">Total Conversations</div></div>
-      <div class="stat-card"><div class="stat-num">$${(t.api_cost||0).toFixed(2)}</div><div class="stat-lbl">Total API Cost</div></div>
-      <div class="stat-card"><div class="stat-num">$${(t.revenue||0).toFixed(2)}</div><div class="stat-lbl">Total Revenue</div></div>
-      <div class="stat-card"><div class="stat-num profit-green">$${(t.profit||0).toFixed(2)}</div><div class="stat-lbl">Total Profit</div></div>
-    `;
+      <div class="stat-card"><div class="stat-num">$${(t.api_cost||0).toFixed(2)}</div><div class="stat-lbl">API Cost</div></div>
+      <div class="stat-card"><div class="stat-num">$${(t.revenue||0).toFixed(2)}</div><div class="stat-lbl">Revenue</div></div>
+      <div class="stat-card"><div class="stat-num profit-green">$${(t.profit||0).toFixed(2)}</div><div class="stat-lbl">Profit</div></div>`;
   } catch(e) {
-    document.getElementById("billing-table-body").innerHTML = '<tr><td colspan="8" class="loading">Error loading billing.</td></tr>';
+    document.getElementById("billing-table-body").innerHTML = '<tr><td colspan="8" class="loading">Error.</td></tr>';
   }
 }
 
@@ -1126,31 +1166,24 @@ function filterBillingTable() {
     const matchStatus = statusFilter === "all" || r.status === statusFilter;
     return matchSearch && matchStatus;
   });
-  filtered.sort((a, b) => {
-    if (sort === "name") return a.business_name.localeCompare(b.business_name);
-    if (sort === "convos") return b.conversations - a.conversations;
-    if (sort === "profit") return b.profit - a.profit;
-    if (sort === "charge") return b.charge - a.charge;
+  filtered.sort((a,b) => {
+    if (sort==="name") return a.business_name.localeCompare(b.business_name);
+    if (sort==="convos") return b.conversations - a.conversations;
+    if (sort==="profit") return b.profit - a.profit;
+    if (sort==="charge") return b.charge - a.charge;
     return 0;
   });
-  document.getElementById("billing-count").textContent = filtered.length + " client(s) shown";
+  document.getElementById("billing-count").textContent = filtered.length + " client(s)";
   const tbody = document.getElementById("billing-table-body");
-  if (filtered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" class="loading">No results found</td></tr>';
-    return;
-  }
+  if (!filtered.length) { tbody.innerHTML = '<tr><td colspan="8" class="loading">No results</td></tr>'; return; }
   tbody.innerHTML = filtered.map(r => `
     <tr>
       <td><input type="checkbox" class="billing-checkbox" value="${r.id}" data-name="${r.business_name}" onchange="updateBillingExportBtn()"></td>
-      <td><strong>${r.business_name}</strong></td>
-      <td>${r.email}</td>
+      <td><strong>${r.business_name}</strong></td><td>${r.email}</td>
       <td><span class="status-badge status-${r.status}">${r.status.toUpperCase()}</span></td>
-      <td>${r.conversations}</td>
-      <td>$${r.api_cost.toFixed(2)}</td>
-      <td>$${r.charge.toFixed(2)}</td>
-      <td class="profit-green">$${r.profit.toFixed(2)}</td>
-    </tr>
-  `).join("");
+      <td>${r.conversations}</td><td>$${r.api_cost.toFixed(2)}</td>
+      <td>$${r.charge.toFixed(2)}</td><td class="profit-green">$${r.profit.toFixed(2)}</td>
+    </tr>`).join("");
 }
 
 function clearBillingFilters() {
@@ -1170,29 +1203,23 @@ function updateBillingExportBtn() {
   const btn = document.getElementById("export-selected-btn");
   btn.style.display = checked > 0 ? "block" : "none";
   btn.textContent = `⬇ Export Selected (${checked})`;
-  document.getElementById("billing-select-all").checked =
-    checked === document.querySelectorAll(".billing-checkbox").length && checked > 0;
+  document.getElementById("billing-select-all").checked = checked === document.querySelectorAll(".billing-checkbox").length && checked > 0;
 }
 
 function exportSelectedCSV() {
   const checked = Array.from(document.querySelectorAll(".billing-checkbox:checked"));
-  if (checked.length === 0) return;
+  if (!checked.length) return;
   const selectedNames = checked.map(cb => cb.dataset.name);
   const selected = billingData.filter(r => selectedNames.includes(r.business_name));
-  let csv = "Business Name,Email,Conversations,API Cost ($),Charge to Client ($),Your Profit ($)\n";
-  selected.forEach(r => {
-    csv += `"${r.business_name}","${r.email}",${r.conversations},${r.api_cost.toFixed(2)},${r.charge.toFixed(2)},${r.profit.toFixed(2)}\n`;
-  });
-  const blob = new Blob([csv], {type: "text/csv"});
+  let csv = "Business Name,Email,Conversations,API Cost ($),Charge ($),Profit ($)\n";
+  selected.forEach(r => { csv += `"${r.business_name}","${r.email}",${r.conversations},${r.api_cost.toFixed(2)},${r.charge.toFixed(2)},${r.profit.toFixed(2)}\n`; });
+  const blob = new Blob([csv], {type:"text/csv"});
   const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url; a.download = "billing_selected.csv"; a.click();
+  const a = document.createElement("a"); a.href=url; a.download="billing_selected.csv"; a.click();
   URL.revokeObjectURL(url);
 }
 
-async function exportCSV() {
-  window.open(API + "/admin/billing/export?x_admin_token=" + adminToken);
-}
+async function exportCSV() { window.open(API + "/admin/billing/export?x_admin_token=" + adminToken); }
 
 // ============ ADD NEW CLIENT ============
 function openAddClient() {
@@ -1205,9 +1232,7 @@ function openAddClient() {
 
 function closeAddClient() {
   document.getElementById("add-client-modal").classList.remove("open");
-  ["nc-name","nc-business","nc-phone","nc-email","nc-password","nc-location","nc-hours","nc-services","nc-desc","nc-website"].forEach(id => {
-    document.getElementById(id).value = "";
-  });
+  ["nc-name","nc-business","nc-phone","nc-email","nc-password","nc-location","nc-hours","nc-services","nc-desc","nc-website"].forEach(id => { document.getElementById(id).value = ""; });
 }
 
 async function createNewClient() {
@@ -1225,67 +1250,53 @@ async function createNewClient() {
   const errEl = document.getElementById("nc-error");
   const sucEl = document.getElementById("nc-success");
   errEl.style.display = "none"; sucEl.style.display = "none";
-
   if (!name || !business || !email || !password) {
-    errEl.textContent = "Please fill in Name, Business Name, Email and Password.";
+    errEl.textContent = "Please fill in Name, Business, Email and Password.";
     errEl.style.display = "block"; return;
   }
-
   try {
     const now = new Date();
-    const trialEnd = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000).toISOString();
-
+    const trialEnd = new Date(now.getTime() + 3*24*60*60*1000).toISOString();
     const clientRes = await fetch(API + "/clients", {
-      method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({name, email, business_name: business, business_type: type})
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({name, email, business_name:business, business_type:type})
     });
     const clientData = await clientRes.json();
-    if (!clientRes.ok) throw new Error(clientData.detail || "Failed to create client");
+    if (!clientRes.ok) throw new Error(clientData.detail || "Failed");
     const clientId = clientData.client.id;
-
     if (selectedAccountType === "trial") {
       await fetch(API + "/admin/set-trial/" + clientId + "?x_admin_token=" + adminToken, {
-        method: "POST", headers: {"Content-Type": "application/json"},
+        method:"POST", headers:{"Content-Type":"application/json"},
         body: JSON.stringify({trial_end: trialEnd})
       });
     }
-
     await fetch(API + "/auth/register", {
-      method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({client_id: clientId, email, password})
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({client_id:clientId, email, password})
     });
-
     await fetch(API + "/clients/settings", {
-      method: "POST", headers: {"Content-Type": "application/json"},
+      method:"POST", headers:{"Content-Type":"application/json"},
       body: JSON.stringify({
-        client_id: clientId,
-        business_description: desc || business + " - " + type,
-        services: services || "Please contact us for our services",
-        working_hours: hours || "Please contact us for our hours",
-        location: location || "", phone: phone || "",
-        website: website || "", bot_name: "Assistant",
-        bot_color: "#1a569a", custom_prompt: ""
+        client_id:clientId, business_description:desc||business+" - "+type,
+        services:services||"Please contact us", working_hours:hours||"Please contact us",
+        location:location||"", phone:phone||"", website:website||"",
+        bot_name:"Assistant", bot_color:"#1a569a", custom_prompt:""
       })
     });
-
     try {
       await fetch(API + "/admin/notify-ghl", {
-        method: "POST", headers: {"Content-Type": "application/json"},
+        method:"POST", headers:{"Content-Type":"application/json"},
         body: JSON.stringify({
-          contact_name: name, business_name: business, business_type: type,
-          email, phone, location, working_hours: hours, services,
-          client_id: clientId, website,
-          account_type: selectedAccountType,
-          trial_end: selectedAccountType === "trial" ? trialEnd : null,
-          dashboard_url: "https://emartit.github.io/emartit-dashboard",
-          login_email: email, login_password: password,
-          payment_link: "https://ematity.com/subscribe",
-          created_at: new Date().toISOString()
+          contact_name:name, business_name:business, business_type:type,
+          email, phone, location, working_hours:hours, services, client_id:clientId, website,
+          account_type:selectedAccountType, trial_end:selectedAccountType==="trial"?trialEnd:null,
+          dashboard_url:"https://emartit.github.io/emartit-dashboard",
+          login_email:email, login_password:password,
+          payment_link:"https://ematity.com/subscribe", created_at:new Date().toISOString()
         })
       });
-    } catch(e) { console.log("GHL error:", e); }
-
-    sucEl.textContent = `✅ ${selectedAccountType === "trial" ? "Trial" : "Paid"} account created! Login: ${email} / ${password}`;
+    } catch(e) {}
+    sucEl.textContent = `✅ ${selectedAccountType==="trial"?"Trial":"Paid"} account created! Login: ${email} / ${password}`;
     sucEl.style.display = "block";
     setTimeout(() => { closeAddClient(); loadClients(); }, 4000);
   } catch(e) {
@@ -1295,9 +1306,7 @@ async function createNewClient() {
 }
 
 document.querySelectorAll(".modal-overlay").forEach(overlay => {
-  overlay.addEventListener("click", function(e) {
-    if (e.target === this) this.classList.remove("open");
-  });
+  overlay.addEventListener("click", function(e) { if (e.target === this) this.classList.remove("open"); });
 });
 </script>
 </body>
