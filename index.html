@@ -580,8 +580,8 @@ function renderRequests() {
           <div class="request-field"><label>Working Hours</label><p>${r.working_hours || "—"}</p></div>
           <div class="request-field" style="grid-column:1/-1"><label>Services</label><p>${r.services || "—"}</p></div>
           <div class="request-field" style="grid-column:1/-1"><label>Description</label><p>${r.description || "—"}</p></div>
-          ${r.special_instructions ? `<div class="request-field" style="grid-column:1/-1"><label>Special Instructions</label><p>${r.special_instructions}</p></div>` : ""}
-        </div>
+${r.special_instructions ? `<div class="request-field" style="grid-column:1/-1"><label>Special Instructions</label><p>${r.special_instructions}</p></div>` : ""}
+          ${r.document_url ? `<div class="request-field" style="grid-column:1/-1"><label>📄 Uploaded Document</label><p><a href="${r.document_url}" target="_blank" style="color:#60a5fa;font-weight:600;text-decoration:none">📥 View / Download Document →</a></p></div>` : ""}        </div>
         <div class="request-actions">${actions}</div>
       </div>`;
   }).join("");
