@@ -192,6 +192,16 @@ label.kn-btn input{display:none}
 .fmt a{color:#1a56a0;text-decoration:underline;word-break:break-word}
 .fmt strong{font-weight:700}
 .convo-bot a{color:#1a56a0}
+
+/* ===== Leads & Queries (admin view) ===== */
+.ib-tabs { display:flex; gap:8px; margin-bottom:14px; }
+.ib-tabs button { padding:7px 16px; border-radius:20px; border:1.5px solid #d1d5db; background:#fff; font-size:12px; font-weight:600; color:#64748b; cursor:pointer; }
+.ib-tabs button.active { background:#1a56a0; border-color:#1a56a0; color:#fff; }
+.ib-item { border:1px solid #e5e7eb; border-radius:10px; padding:12px 14px; margin-bottom:10px; }
+.ib-item .t { font-size:13px; font-weight:700; color:#1a1a2e; }
+.ib-item .m { font-size:11px; color:#64748b; margin-top:4px; }
+.ib-item .c { font-size:12px; color:#374151; margin-top:6px; }
+.ib-item button { margin-top:8px; }
 </style>
 </head>
 <body>
@@ -507,6 +517,18 @@ label.kn-btn input{display:none}
   </div>
 </div>
 
+<!-- LEADS & QUERIES MODAL -->
+<div class="modal-overlay" id="inbox-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="inbox-title">Leads &amp; Queries</h3>
+      <button class="modal-close" onclick="closeModal('inbox-modal')">✕</button>
+    </div>
+    <div class="ib-tabs"><button class="active" id="ib-tab-leads" onclick="showInboxTab('leads')">📋 Leads</button><button id="ib-tab-queries" onclick="showInboxTab('queries')">📥 Queries</button></div>
+    <div id="inbox-body"><div class="convo-empty">Loading…</div></div>
+  </div>
+</div>
+
 <!-- CONVERSATIONS MODAL -->
 <div class="modal-overlay" id="convo-modal">
   <div class="modal">
@@ -792,6 +814,7 @@ function renderClientsTable() {
         <button class="btn-sm btn-${c.status==='active'?'pause':'activate'}" onclick="toggleClient('${c.id}')">${c.status==="active"?"⏸":"▶"}</button>
         <button class="btn-sm btn-view" onclick="viewConvos('${c.id}','${c.business_name}')">💬</button>
         <button class="btn-sm" style="background:#e9d5ff;color:#6b21a8" onclick="openAiTraining('${c.id}','${c.business_name}')">🧠</button>
+        <button class="btn-sm" style="background:#dcfce7;color:#166534" title="Leads &amp; queries" onclick="openInbox('${c.id}')">📋</button>
         ${convertBtn}
       </td></tr>`;
   }).join("");
@@ -1368,6 +1391,60 @@ function fmtReply(text) {
   }
   flushPara(); flushList();
   return html || "<p></p>";
+}
+
+
+// ============ LEADS & QUERIES (admin, read-only) ============
+let inboxData = { leads: [], queries: [] };
+let inboxClientId = "";
+let inboxTab = "leads";
+const IB_TYPES = { unanswered: "❓ Unanswered", human: "🙋 Wants a person", booking: "📅 Booking / quote", complaint: "⚠️ Complaint", other: "📌 Follow-up" };
+async function openInbox(clientId) {
+  const c = allClients.find(x => x.id === clientId) || {};
+  inboxClientId = clientId;
+  document.getElementById("inbox-title").textContent = (c.business_name || "Client") + " — Leads & Queries";
+  document.getElementById("inbox-body").innerHTML = '<div class="convo-empty">Loading…</div>';
+  document.getElementById("inbox-modal").classList.add("open");
+  try {
+    const res = await fetch(API + "/admin/clients/" + clientId + "/inbox?x_admin_token=" + encodeURIComponent(adminToken));
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.detail || "Error");
+    inboxData = { leads: d.leads || [], queries: d.queries || [] };
+    document.getElementById("ib-tab-leads").textContent = "📋 Leads (" + inboxData.leads.length + ")";
+    document.getElementById("ib-tab-queries").textContent = "📥 Queries (" + inboxData.queries.length + ")";
+    showInboxTab(inboxTab);
+  } catch (e) { document.getElementById("inbox-body").innerHTML = '<div class="convo-empty">❌ ' + fmtEsc(e.message) + '</div>'; }
+}
+function showInboxTab(tab) {
+  inboxTab = tab;
+  document.getElementById("ib-tab-leads").classList.toggle("active", tab === "leads");
+  document.getElementById("ib-tab-queries").classList.toggle("active", tab === "queries");
+  const when = s => s ? new Date(s).toLocaleString("en-US", {month:"short", day:"numeric", hour:"2-digit", minute:"2-digit"}) : "";
+  const chatBtn = sid => sid ? `<button class="btn-sm btn-view" onclick="openInboxChat('${fmtEsc(sid)}')">💬 View chat</button>` : "";
+  const rows = tab === "leads" ? inboxData.leads.map(l => `<div class="ib-item">
+      <div class="t">${fmtEsc(l.visitor_name || l.visitor_email || l.visitor_phone || "Visitor")}${l.business_name ? " · " + fmtEsc(l.business_name) : ""}</div>
+      <div class="m">${fmtEsc(l.source || "form")} · ${fmtEsc(l.status || "new")} · ${when(l.created_at)}</div>
+      <div class="c">${fmtEsc(l.summary || l.message || "")}</div>
+      <div class="c">${fmtEsc(l.visitor_email || "")} ${fmtEsc(l.visitor_phone || "")}</div>
+      ${l.notes ? `<div class="c" style="color:#64748b">Notes: ${fmtEsc(l.notes)}</div>` : ""}${chatBtn(l.session_id)}</div>`)
+    : inboxData.queries.map(q => `<div class="ib-item" ${q.urgency === "high" ? 'style="border-left:4px solid #dc2626"' : ""}>
+      <div class="m">${IB_TYPES[q.type] || fmtEsc(q.type)} · ${fmtEsc(q.status || "new")} · ${when(q.created_at)}</div>
+      <div class="t" style="margin-top:4px">${fmtEsc(q.summary || "")}</div>
+      <div class="c">${fmtEsc(q.visitor_name || "")} ${fmtEsc(q.visitor_email || "")} ${fmtEsc(q.visitor_phone || "")}</div>
+      ${q.notes ? `<div class="c" style="color:#64748b">Notes: ${fmtEsc(q.notes)}</div>` : ""}${chatBtn(q.session_id)}</div>`);
+  document.getElementById("inbox-body").innerHTML = rows.length ? rows.join("") : '<div class="convo-empty">Nothing yet.</div>';
+}
+async function openInboxChat(sessionId) {
+  const body = document.getElementById("inbox-body");
+  body.innerHTML = '<div class="convo-empty">Loading chat…</div>';
+  try {
+    const res = await fetch(API + "/admin/clients/" + inboxClientId + "/chats/" + encodeURIComponent(sessionId) + "?x_admin_token=" + encodeURIComponent(adminToken));
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.detail || "Error");
+    body.innerHTML = `<button class="btn-sm btn-view" style="margin-bottom:12px" onclick="showInboxTab(inboxTab)">← Back</button>` +
+      ((d.messages || []).map(m => { const bot = m.role !== "user";
+        return `<div class="convo-bubble convo-${bot ? "bot fmt" : "user"}"><div class="convo-role">${bot ? "Bot" : "Visitor"}</div>${bot ? fmtReply(m.message) : fmtEsc(m.message).replace(/\n/g, "<br>")}</div>`; }).join("") || '<div class="convo-empty">No messages saved for this chat.</div>');
+  } catch (e) { body.innerHTML = '<div class="convo-empty">❌ ' + fmtEsc(e.message) + '</div>'; }
 }
 
 document.querySelectorAll(".modal-overlay").forEach(overlay => { overlay.addEventListener("click", function(e) { if (e.target===this) this.classList.remove("open"); }); });
