@@ -182,6 +182,16 @@ label.kn-btn input{display:none}
 .req-kn{padding:0 20px 16px}
 .req-kn .kn-sheet-head{margin-bottom:8px}
 .req-kn > .kn-read{border:1px solid #e5e7eb;border-radius:10px}
+
+/* formatted chat replies */
+.fmt p{margin:0 0 8px}
+.fmt p:last-child{margin-bottom:0}
+.fmt ul,.fmt ol{margin:4px 0 8px 20px;padding:0}
+.fmt ul:last-child,.fmt ol:last-child{margin-bottom:0}
+.fmt li{margin:3px 0}
+.fmt a{color:#1a56a0;text-decoration:underline;word-break:break-word}
+.fmt strong{font-weight:700}
+.convo-bot a{color:#1a56a0}
 </style>
 </head>
 <body>
@@ -952,7 +962,7 @@ async function viewConvos(clientId, businessName) {
     const data = await res.json();
     const convos = data.conversations || [];
     if (!convos.length) { document.getElementById("modal-body").innerHTML = '<div class="convo-empty">No conversations yet.</div>'; return; }
-    document.getElementById("modal-body").innerHTML = convos.map(c => { const role = c.role === "assistant" ? "bot" : "user"; return `<div class="convo-bubble convo-${role}"><div class="convo-role">${role==="user"?"Visitor":"Bot"}</div>${c.message||""}</div>`; }).join("");
+    document.getElementById("modal-body").innerHTML = convos.map(c => { const role = c.role === "assistant" ? "bot" : "user"; return `<div class="convo-bubble convo-${role}${role==="bot"?" fmt":""}"><div class="convo-role">${role==="user"?"Visitor":"Bot"}</div>${role==="bot" ? fmtReply(c.message) : fmtEsc(c.message).replace(/\n/g,"<br>")}</div>`; }).join("");
   } catch(e) { document.getElementById("modal-body").innerHTML = '<div class="convo-empty">Error loading.</div>'; }
 }
 
@@ -1325,6 +1335,39 @@ async function viewRequestKnowledge(requestId, btn) {
   } catch (e) {
     box.innerHTML = '<div class="kn-status err" style="display:block">❌ ' + knEsc(e.message) + '</div>';
   }
+}
+
+
+// ============ CHAT REPLY FORMATTING (safe: escapes everything first) ============
+function fmtEsc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+function fmtInline(s) {
+  let h = fmtEsc(s);
+  h = h.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+  h = h.replace(/__(.+?)__/g, "<strong>$1</strong>");
+  h = h.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  h = h.replace(/(^|[\s(])(https?:\/\/[^\s<]+[^\s<.,!?;:)])/g, '$1<a href="$2" target="_blank" rel="noopener">$2</a>');
+  h = h.replace(/(^|[\s(])([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})/g, '$1<a href="mailto:$2">$2</a>');
+  return h;
+}
+function fmtReply(text) {
+  const lines = String(text == null ? "" : text).replace(/\r/g, "").split("\n");
+  let html = "", para = [], list = null;
+  const flushPara = () => { if (para.length) { html += "<p>" + para.join("<br>") + "</p>"; para = []; } };
+  const flushList = () => { if (list) { html += "<" + list.type + ">" + list.items.map(i => "<li>" + i + "</li>").join("") + "</" + list.type + ">"; list = null; } };
+  for (const raw of lines) {
+    const line = raw.trim();
+    let m;
+    if (!line) { flushPara(); flushList(); continue; }
+    if (/^(-{3,}|\*{3,}|_{3,})$/.test(line)) { flushPara(); flushList(); continue; }
+    if ((m = line.match(/^#{1,6}\s+(.*)$/))) { flushPara(); flushList(); html += "<p><strong>" + fmtInline(m[1].replace(/\*\*/g, "")) + "</strong></p>"; continue; }
+    if ((m = line.match(/^[-•*✅📌]\s+(.*)$/))) { flushPara(); if (!list || list.type !== "ul") { flushList(); list = { type: "ul", items: [] }; } list.items.push(fmtInline(m[1])); continue; }
+    if ((m = line.match(/^\d+[.)]\s+(.*)$/))) { flushPara(); if (!list || list.type !== "ol") { flushList(); list = { type: "ol", items: [] }; } list.items.push(fmtInline(m[1])); continue; }
+    flushList(); para.push(fmtInline(line));
+  }
+  flushPara(); flushList();
+  return html || "<p></p>";
 }
 
 document.querySelectorAll(".modal-overlay").forEach(overlay => { overlay.addEventListener("click", function(e) { if (e.target===this) this.classList.remove("open"); }); });
