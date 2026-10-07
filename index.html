@@ -524,7 +524,8 @@ label.kn-btn input{display:none}
       <h3 id="inbox-title">Leads &amp; Queries</h3>
       <button class="modal-close" onclick="closeModal('inbox-modal')">✕</button>
     </div>
-    <div class="ib-tabs"><button class="active" id="ib-tab-leads" onclick="showInboxTab('leads')">📋 Leads</button><button id="ib-tab-queries" onclick="showInboxTab('queries')">📥 Queries</button></div>
+    <div class="ib-tabs"><button class="active" id="ib-tab-leads" onclick="showInboxTab('leads')">📋 Leads</button><button id="ib-tab-queries" onclick="showInboxTab('queries')">📥 Queries</button><button id="ib-tab-log" onclick="showAccessLog()">🔐 Access log</button></div>
+    <div style="font-size:12px;color:#64748b;background:#f8fafc;border:1px solid #e5e7eb;border-radius:8px;padding:8px 12px;margin-bottom:12px">🔒 Visitor emails and phone numbers are hidden to protect your client's leads. "Show details" reveals them and is recorded in the access log.</div>
     <div id="inbox-body"><div class="convo-empty">Loading…</div></div>
   </div>
 </div>
@@ -895,7 +896,7 @@ async function viewProfile(clientId) {
   document.getElementById("profile-title").textContent = client.business_name + " — Profile";
   document.getElementById("profile-modal").classList.add("open");
   try {
-    const [settingsRes, trialRes] = await Promise.all([fetch(API + "/clients/" + clientId + "/settings"), fetch(API + "/clients/" + clientId + "/trial-status")]);
+    const [settingsRes, trialRes] = await Promise.all([fetch(API + "/clients/" + clientId + "/settings?x_admin_token=" + encodeURIComponent(adminToken)), fetch(API + "/clients/" + clientId + "/trial-status")]);
     const settingsData = await settingsRes.json();
     const trialData = await trialRes.json();
     const s = settingsData.settings || {};
@@ -939,7 +940,7 @@ async function openEdit(clientId) {
   document.getElementById("edit-error").style.display = "none";
   document.getElementById("edit-success").style.display = "none";
   try {
-    const res = await fetch(API + "/clients/" + clientId + "/settings");
+    const res = await fetch(API + "/clients/" + clientId + "/settings?x_admin_token=" + encodeURIComponent(adminToken));
     const data = await res.json();
     const s = data.settings || {};
     document.getElementById("edit-phone").value = s.phone || "";
@@ -960,7 +961,7 @@ async function saveEdit() {
   const sucEl = document.getElementById("edit-success");
   errEl.style.display = "none"; sucEl.style.display = "none";
   try {
-    await fetch(API + "/clients/settings", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ client_id:clientId, business_description:document.getElementById("edit-desc").value, services:document.getElementById("edit-services").value, working_hours:document.getElementById("edit-hours").value, location:document.getElementById("edit-location").value, phone:document.getElementById("edit-phone").value, website:document.getElementById("edit-website").value, bot_name:document.getElementById("edit-bot-name").value, custom_prompt:document.getElementById("edit-custom").value }) });
+    await fetch(API + "/clients/settings?x_admin_token=" + encodeURIComponent(adminToken), { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ client_id:clientId, business_description:document.getElementById("edit-desc").value, services:document.getElementById("edit-services").value, working_hours:document.getElementById("edit-hours").value, location:document.getElementById("edit-location").value, phone:document.getElementById("edit-phone").value, website:document.getElementById("edit-website").value, bot_name:document.getElementById("edit-bot-name").value, custom_prompt:document.getElementById("edit-custom").value }) });
     sucEl.textContent = "✅ Saved!"; sucEl.style.display = "block";
     setTimeout(() => { closeModal("edit-modal"); loadClients(); }, 2000);
   } catch(e) { errEl.textContent = "Error: " + e.message; errEl.style.display = "block"; }
@@ -997,7 +998,7 @@ async function loadAiTrainingTable() {
   try {
     const rows = await Promise.all(allClients.map(async c => {
       try {
-        const res = await fetch(API + "/clients/" + c.id + "/settings");
+        const res = await fetch(API + "/clients/" + c.id + "/settings?x_admin_token=" + encodeURIComponent(adminToken));
         const data = await res.json();
         const s = data.settings || {};
         return { c, kbLen: s.knowledge_base ? s.knowledge_base.length : 0, faqCount: s.faq_items ? s.faq_items.length : 0, hasSheet: !!s.knowledge_sheet };
@@ -1024,7 +1025,7 @@ async function openAiTraining(clientId, businessName) {
   knClientId = clientId;
   knLoad();
   try {
-    const res = await fetch(API + "/clients/" + clientId + "/settings");
+    const res = await fetch(API + "/clients/" + clientId + "/settings?x_admin_token=" + encodeURIComponent(adminToken));
     const data = await res.json();
     const s = data.settings || {};
     document.getElementById("ai-knowledge-base").value = s.knowledge_base || "";
@@ -1050,10 +1051,10 @@ async function saveAiTraining() {
   const faqItems = [];
   document.querySelectorAll(".faq-row").forEach(row => { const inputs = row.querySelectorAll("input"); const q = inputs[0].value.trim(); const a = inputs[1].value.trim(); if (q && a) faqItems.push({ question: q, answer: a }); });
   try {
-    const settingsRes = await fetch(API + "/clients/" + clientId + "/settings");
+    const settingsRes = await fetch(API + "/clients/" + clientId + "/settings?x_admin_token=" + encodeURIComponent(adminToken));
     const settingsData = await settingsRes.json();
     const s = settingsData.settings || {};
-    const res = await fetch(API + "/clients/settings", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ client_id:clientId, business_description:s.business_description||"", services:s.services||"", working_hours:s.working_hours||"", location:s.location||"", phone:s.phone||"", website:s.website||"", bot_name:s.bot_name||"Assistant", bot_color:s.bot_color||"#1a569a", bubble_color:s.bubble_color||"#1a569a", header_color:s.header_color||"#1a569a", chat_position:s.chat_position||"right", bot_avatar:s.bot_avatar||"robot", welcome_message:s.welcome_message||"Hi! How can I help you today? 😊", custom_prompt:s.custom_prompt||"", bot_avatar_url:s.bot_avatar_url||"", knowledge_base:knowledgeBase, faq_items:faqItems }) });
+    const res = await fetch(API + "/clients/settings?x_admin_token=" + encodeURIComponent(adminToken), { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ client_id:clientId, business_description:s.business_description||"", services:s.services||"", working_hours:s.working_hours||"", location:s.location||"", phone:s.phone||"", website:s.website||"", bot_name:s.bot_name||"Assistant", bot_color:s.bot_color||"#1a569a", bubble_color:s.bubble_color||"#1a569a", header_color:s.header_color||"#1a569a", chat_position:s.chat_position||"right", bot_avatar:s.bot_avatar||"robot", welcome_message:s.welcome_message||"Hi! How can I help you today? 😊", custom_prompt:s.custom_prompt||"", bot_avatar_url:s.bot_avatar_url||"", knowledge_base:knowledgeBase, faq_items:faqItems }) });
     if (!res.ok) throw new Error("Failed to save");
     sucEl.textContent = "✅ AI Training saved!"; sucEl.style.display = "block";
     setTimeout(() => { closeModal("ai-modal"); loadAiTrainingTable(); }, 2500);
@@ -1128,14 +1129,14 @@ async function createNewClient() {
   if (!name||!business||!email||!password) { errEl.textContent="Please fill in Name, Business, Email and Password."; errEl.style.display="block"; return; }
   try {
     const now=new Date(), trialEnd=new Date(now.getTime()+3*24*60*60*1000).toISOString();
-    const clientRes=await fetch(API+"/clients",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name,email,business_name:business,business_type:type})});
+    const clientRes=await fetch(API+"/clients?x_admin_token="+encodeURIComponent(adminToken),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name,email,business_name:business,business_type:type})});
     const clientData=await clientRes.json();
     if (!clientRes.ok) throw new Error(clientData.detail||"Failed");
     const clientId=clientData.client.id;
     if (selectedAccountType==="trial") { await fetch(API+"/admin/set-trial/"+clientId+"?x_admin_token="+adminToken,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({trial_end:trialEnd})}); }
-    await fetch(API+"/auth/register",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({client_id:clientId,email,password})});
-    await fetch(API+"/clients/settings",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({client_id:clientId,business_description:desc||business+" - "+type,services:services||"Please contact us",working_hours:hours||"Please contact us",location:location||"",phone:phone||"",website:website||"",bot_name:"Assistant",bot_color:"#1a569a",custom_prompt:""})});
-    try { await fetch(API+"/admin/notify-ghl",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contact_name:name,business_name:business,business_type:type,email,phone,location,working_hours:hours,services,client_id:clientId,website,account_type:selectedAccountType,trial_end:selectedAccountType==="trial"?trialEnd:null,dashboard_url:"https://emartit.github.io/emartit-dashboard",login_email:email,login_password:password,payment_link:"https://www.emartit.com/subscribe",created_at:new Date().toISOString()})}); } catch(e) {}
+    await fetch(API+"/auth/register?x_admin_token="+encodeURIComponent(adminToken),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({client_id:clientId,email,password})});
+    await fetch(API+"/clients/settings?x_admin_token="+encodeURIComponent(adminToken),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({client_id:clientId,business_description:desc||business+" - "+type,services:services||"Please contact us",working_hours:hours||"Please contact us",location:location||"",phone:phone||"",website:website||"",bot_name:"Assistant",bot_color:"#1a569a",custom_prompt:""})});
+    try { await fetch(API+"/admin/notify-ghl?x_admin_token="+encodeURIComponent(adminToken),{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contact_name:name,business_name:business,business_type:type,email,phone,location,working_hours:hours,services,client_id:clientId,website,account_type:selectedAccountType,trial_end:selectedAccountType==="trial"?trialEnd:null,dashboard_url:"https://emartit.github.io/emartit-dashboard",login_email:email,login_password:password,payment_link:"https://www.emartit.com/subscribe",created_at:new Date().toISOString()})}); } catch(e) {}
     sucEl.textContent=`✅ ${selectedAccountType==="trial"?"Trial":"Paid"} account created! Login: ${email} / ${password}`; sucEl.style.display="block";
     setTimeout(()=>{closeAddClient();loadClients();},4000);
   } catch(e) { errEl.textContent="Error: "+e.message; errEl.style.display="block"; }
@@ -1398,6 +1399,30 @@ function fmtReply(text) {
 let inboxData = { leads: [], queries: [] };
 let inboxClientId = "";
 let inboxTab = "leads";
+async function revealItem(type, id) {
+  const reason = prompt("Showing this visitor's full contact details is recorded in the access log.\n\nReason (e.g. client support request):", "Client support");
+  if (reason === null) return;
+  try {
+    const res = await fetch(API + "/admin/" + type + "/" + encodeURIComponent(id) + "/reveal?x_admin_token=" + encodeURIComponent(adminToken) + "&reason=" + encodeURIComponent(reason), {method: "POST"});
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.detail || "Error");
+    const list = inboxData[type]; const i = list.findIndex(x => x.id === id);
+    if (i >= 0) list[i] = Object.assign({}, d.item, {masked: false});
+    showInboxTab(inboxTab);
+  } catch (e) { alert(e.message); }
+}
+async function showAccessLog() {
+  inboxTab = "log";
+  ["leads","queries","log"].forEach(x => document.getElementById("ib-tab-" + x).classList.toggle("active", x === "log"));
+  const body = document.getElementById("inbox-body");
+  body.innerHTML = '<div class="convo-empty">Loading…</div>';
+  try {
+    const res = await fetch(API + "/admin/access-log?x_admin_token=" + encodeURIComponent(adminToken));
+    const d = await res.json();
+    const rows = (d.log || []).filter(r => String(r.client_id) === String(inboxClientId));
+    body.innerHTML = rows.length ? rows.map(r => `<div class="ib-item"><div class="t">${fmtEsc(r.action === "reveal_chat" ? "Viewed full chat" : "Viewed contact details")} · ${fmtEsc(r.item_type)}</div><div class="m">${new Date(r.created_at).toLocaleString()}</div>${r.reason ? `<div class="c">Reason: ${fmtEsc(r.reason)}</div>` : ""}</div>`).join("") : '<div class="convo-empty">No private data of this client has been viewed.</div>';
+  } catch (e) { body.innerHTML = '<div class="convo-empty">❌ ' + fmtEsc(e.message) + '</div>'; }
+}
 const IB_TYPES = { unanswered: "❓ Unanswered", human: "🙋 Wants a person", booking: "📅 Booking / quote", complaint: "⚠️ Complaint", other: "📌 Follow-up" };
 async function openInbox(clientId) {
   const c = allClients.find(x => x.id === clientId) || {};
@@ -1416,9 +1441,12 @@ async function openInbox(clientId) {
   } catch (e) { document.getElementById("inbox-body").innerHTML = '<div class="convo-empty">❌ ' + fmtEsc(e.message) + '</div>'; }
 }
 function showInboxTab(tab) {
+  if (tab === "log") { showAccessLog(); return; }
   inboxTab = tab;
   document.getElementById("ib-tab-leads").classList.toggle("active", tab === "leads");
   document.getElementById("ib-tab-queries").classList.toggle("active", tab === "queries");
+  document.getElementById("ib-tab-log").classList.toggle("active", false);
+  const revealBtn = (type, it) => it.masked ? `<button class="btn-sm btn-edit" onclick="revealItem('${type}', '${fmtEsc(it.id)}')">👁 Show details</button> ` : "";
   const when = s => s ? new Date(s).toLocaleString("en-US", {month:"short", day:"numeric", hour:"2-digit", minute:"2-digit"}) : "";
   const chatBtn = sid => sid ? `<button class="btn-sm btn-view" onclick="openInboxChat('${fmtEsc(sid)}')">💬 View chat</button>` : "";
   const rows = tab === "leads" ? inboxData.leads.map(l => `<div class="ib-item">
@@ -1426,22 +1454,29 @@ function showInboxTab(tab) {
       <div class="m">${fmtEsc(l.source || "form")} · ${fmtEsc(l.status || "new")} · ${when(l.created_at)}</div>
       <div class="c">${fmtEsc(l.summary || l.message || "")}</div>
       <div class="c">${fmtEsc(l.visitor_email || "")} ${fmtEsc(l.visitor_phone || "")}</div>
-      ${l.notes ? `<div class="c" style="color:#64748b">Notes: ${fmtEsc(l.notes)}</div>` : ""}${chatBtn(l.session_id)}</div>`)
+      ${l.notes ? `<div class="c" style="color:#64748b">Notes: ${fmtEsc(l.notes)}</div>` : ""}${revealBtn("leads", l)}${chatBtn(l.session_id)}</div>`)
     : inboxData.queries.map(q => `<div class="ib-item" ${q.urgency === "high" ? 'style="border-left:4px solid #dc2626"' : ""}>
       <div class="m">${IB_TYPES[q.type] || fmtEsc(q.type)} · ${fmtEsc(q.status || "new")} · ${when(q.created_at)}</div>
       <div class="t" style="margin-top:4px">${fmtEsc(q.summary || "")}</div>
       <div class="c">${fmtEsc(q.visitor_name || "")} ${fmtEsc(q.visitor_email || "")} ${fmtEsc(q.visitor_phone || "")}</div>
-      ${q.notes ? `<div class="c" style="color:#64748b">Notes: ${fmtEsc(q.notes)}</div>` : ""}${chatBtn(q.session_id)}</div>`);
+      ${q.notes ? `<div class="c" style="color:#64748b">Notes: ${fmtEsc(q.notes)}</div>` : ""}${revealBtn("queries", q)}${chatBtn(q.session_id)}</div>`);
   document.getElementById("inbox-body").innerHTML = rows.length ? rows.join("") : '<div class="convo-empty">Nothing yet.</div>';
 }
-async function openInboxChat(sessionId) {
+async function openInboxChat(sessionId, reveal) {
   const body = document.getElementById("inbox-body");
+  let extra = "";
+  if (reveal) {
+    const reason = prompt("Showing the full chat (including contact details) is recorded in the access log.\n\nReason:", "Client support");
+    if (reason === null) return;
+    extra = "&reveal=true&reason=" + encodeURIComponent(reason);
+  }
   body.innerHTML = '<div class="convo-empty">Loading chat…</div>';
   try {
-    const res = await fetch(API + "/admin/clients/" + inboxClientId + "/chats/" + encodeURIComponent(sessionId) + "?x_admin_token=" + encodeURIComponent(adminToken));
+    const res = await fetch(API + "/admin/clients/" + inboxClientId + "/chats/" + encodeURIComponent(sessionId) + "?x_admin_token=" + encodeURIComponent(adminToken) + extra);
     const d = await res.json();
     if (!res.ok) throw new Error(d.detail || "Error");
     body.innerHTML = `<button class="btn-sm btn-view" style="margin-bottom:12px" onclick="showInboxTab(inboxTab)">← Back</button>` +
+      (d.masked ? ` <button class="btn-sm btn-edit" style="margin-bottom:12px" onclick="openInboxChat('${fmtEsc(sessionId)}', true)">👁 Show full chat (recorded)</button>` : ` <span style="font-size:11px;color:#92400e">Full chat shown — recorded in the access log</span>`) +
       ((d.messages || []).map(m => { const bot = m.role !== "user";
         return `<div class="convo-bubble convo-${bot ? "bot fmt" : "user"}"><div class="convo-role">${bot ? "Bot" : "Visitor"}</div>${bot ? fmtReply(m.message) : fmtEsc(m.message).replace(/\n/g, "<br>")}</div>`; }).join("") || '<div class="convo-empty">No messages saved for this chat.</div>');
   } catch (e) { body.innerHTML = '<div class="convo-empty">❌ ' + fmtEsc(e.message) + '</div>'; }
